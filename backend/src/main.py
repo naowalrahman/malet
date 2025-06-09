@@ -1,27 +1,20 @@
-from fastapi import FastAPI, HTTPException, BackgroundTasks, UploadFile, File
+from fastapi import FastAPI, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
 from pydantic import BaseModel
-from typing import List, Dict, Optional, Any
-import pandas as pd
-import numpy as np
-import asyncio
+from typing import Optional
 import uvicorn
-import os
-import sys
-import json
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime
 import logging
+import sys
+import os
 
-# Add the src directory to Python path
-sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+sys.path.append(os.path.dirname(__file__))
 
-from models.EnsembleModel import EnsembleModel
-from data.fetcher import DataFetcher, get_popular_symbols, validate_symbol
-from indicators.technical import TechnicalIndicators
+from data_fetcher import get_popular_symbols, validate_symbol, DataFetcher
+from indicators import TechnicalIndicators
 from models.TradingModelTrainer import TradingModelTrainer
-from backtesting.engine import BacktestEngine, BuyAndHoldStrategy, MLTradingStrategy
+from backtesting_engine import BacktestEngine
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
@@ -62,6 +55,8 @@ class TrainingRequest(BaseModel):
     learning_rate: float = 0.001
     prediction_horizon: int = 5
     threshold: float = 0.02
+    start_date: Optional[str] = None
+    end_date: Optional[str] = None
 
 class BacktestRequest(BaseModel):
     symbol: str
@@ -100,9 +95,9 @@ async def validate_symbol_endpoint(request: StockRequest):
 
 @app.post("/stock-data")
 async def get_stock_data(request: StockRequest):
-    """Fetch minute-wise stock data"""
+    """Fetch daily stock data"""
     try:
-        data = data_fetcher.fetch_minute_data(request.symbol, request.period)
+        data = data_fetcher.fetch_daily_data(request.symbol, request.period)
         
         if data.empty:
             raise HTTPException(status_code=404, detail=f"No data found for symbol {request.symbol}")
@@ -166,6 +161,19 @@ async def get_stock_info(symbol: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 # Machine Learning endpoints
+
+@app.get("/available-models")
+async def get_available_models():
+    """Get list of available models"""
+    return {
+        "models": [
+            {"model_id": "lstm", "model_type": "LSTM"}, 
+            {"model_id": "cnn_lstm", "model_type": "CNN-LSTM"}, 
+            {"model_id": "transformer", "model_type": "Transformer"},
+            # {"model_id": "ensemble", "model_type": "Ensemble"}
+        ]
+    }
+
 async def train_model_background(job_id: str, request: TrainingRequest):
     """Background task for model training"""
     try:
@@ -173,7 +181,10 @@ async def train_model_background(job_id: str, request: TrainingRequest):
         training_jobs[job_id]["progress"] = 10
         
         # Fetch data
-        data = data_fetcher.fetch_minute_data(request.symbol, "6mo")  # Get more data for training
+        if request.start_date and request.end_date:
+            data = data_fetcher.fetch_historical_data(request.symbol, request.start_date, request.end_date)
+        else:
+            data = data_fetcher.fetch_daily_data(request.symbol, "6mo")  # Get more data for training
         
         if data.empty:
             training_jobs[job_id]["status"] = "error"
@@ -246,8 +257,8 @@ async def get_training_status(job_id: str):
     
     return training_jobs[job_id]
 
-@app.get("/models")
-async def list_models():
+@app.get("/trained-models")
+async def list_trained_models():
     """List all trained models"""
     model_list = []
     for model_id, model_info in models.items():
@@ -261,7 +272,7 @@ async def list_models():
     
     return {"models": model_list}
 
-@app.delete("/models/{model_id}")
+@app.delete("/trained-models/{model_id}")
 async def delete_model(model_id: str):
     """Delete a trained model"""
     if model_id not in models:
@@ -285,7 +296,7 @@ async def make_prediction(request: PredictionRequest):
         trainer = model_info["trainer"]
         
         # Fetch recent data
-        data = data_fetcher.fetch_minute_data(request.symbol, "1mo")
+        data = data_fetcher.fetch_daily_data(request.symbol, "1mo")
         
         if data.empty:
             raise HTTPException(status_code=404, detail=f"No data found for symbol {request.symbol}")
@@ -303,7 +314,7 @@ async def make_prediction(request: PredictionRequest):
         latest_prediction = int(predictions[-1])
         confidence = 0.8  # Placeholder - you could calculate actual confidence
         
-        signal_map = {0: "HOLD", 1: "BUY", 2: "SELL"}
+        signal_map = {0: "DOWN", 1: "UP"}
         
         return {
             "symbol": request.symbol,
@@ -335,7 +346,7 @@ async def run_backtest(request: BacktestRequest):
                 request.symbol, request.start_date, request.end_date
             )
         else:
-            data = data_fetcher.fetch_minute_data(request.symbol, "3mo")
+            data = data_fetcher.fetch_daily_data(request.symbol, "3mo")
         
         if data.empty:
             raise HTTPException(status_code=404, detail=f"No data found for symbol {request.symbol}")
@@ -369,7 +380,7 @@ async def get_market_analysis(symbol: str):
     """Get comprehensive market analysis"""
     try:
         # Fetch data
-        data = data_fetcher.fetch_minute_data(symbol, "2mo")
+        data = data_fetcher.fetch_daily_data(symbol, "2mo")
         
         if data.empty:
             raise HTTPException(status_code=404, detail=f"No data found for symbol {symbol}")

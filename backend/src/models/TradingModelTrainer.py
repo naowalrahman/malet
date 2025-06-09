@@ -71,18 +71,20 @@ class TradingModelTrainer:
         return feature_df
 
     def create_targets(self, df: pd.DataFrame, prediction_horizon: int = 5,
-                      threshold: float = 0.02) -> pd.Series:
+                      threshold: float = 0.001) -> pd.Series:
         """
-        Create trading targets (0: Hold, 1: Buy, 2: Sell)
+        Create binary trading targets (0: Down, 1: Up)
         """
         # Calculate future returns
         future_returns = df['Close'].shift(-prediction_horizon) / df['Close'] - 1
 
-        # Create targets based on thresholds
-        targets = np.where(future_returns > threshold, 1,  # Buy
-                  np.where(future_returns < -threshold, 2,  # Sell
-                          0))  # Hold
+        # Create binary targets: 1 if price goes up, 0 if price goes down
+        # Use a small threshold to avoid noise
+        targets = np.where(future_returns > threshold, 1, 0)  # 1: Up, 0: Down
 
+        print(f"Target distribution: Up={np.sum(targets)}, Down={len(targets) - np.sum(targets)}")
+        print(f"Target ratio: {np.mean(targets):.3f} (Up ratio)")
+        
         return pd.Series(targets, index=df.index)
 
     def create_sequences(self, features: np.ndarray, targets: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
@@ -98,7 +100,7 @@ class TradingModelTrainer:
         return np.array(X), np.array(y)
 
     def prepare_data(self, df: pd.DataFrame, prediction_horizon: int = 5,
-                    threshold: float = 0.02) -> Tuple[torch.Tensor, torch.Tensor]:
+                    threshold: float = 0.001) -> Tuple[torch.Tensor, torch.Tensor]:
         """
         Prepare data for training
         """
@@ -176,18 +178,28 @@ class TradingModelTrainer:
 
         # Split data
         X_train, X_val, y_train, y_val = train_test_split(
-            X, y, test_size=validation_split, random_state=42, stratify=y.cpu()
+            X, y, test_size=validation_split, random_state=0, stratify=y.cpu()
         )
 
         # Initialize model
         self.initialize_model(X.shape[2])
 
         # Initialize optimizer and loss function with class weights for imbalanced data
-        class_weights = torch.tensor([1.0 / count for count in class_counts], dtype=torch.float32).to(self.device)
+        if len(class_counts) == 2:
+            # For binary classification, balance the classes better
+            total_samples = torch.sum(class_counts)
+            class_weights = total_samples / (2.0 * class_counts)
+            class_weights = class_weights / torch.sum(class_weights) * 2.0  # Normalize
+        else:
+            class_weights = torch.tensor([1.0 / count for count in class_counts], dtype=torch.float32)
+        
+        class_weights = class_weights.to(self.device)
+        print(f"Using class weights: {class_weights}")
+        
         criterion = nn.CrossEntropyLoss(weight=class_weights)
         
-        optimizer = optim.Adam(self.model.parameters(), lr=learning_rate, weight_decay=1e-5)
-        scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=10, factor=0.5)
+        optimizer = optim.Adam(self.model.parameters(), lr=learning_rate, weight_decay=1e-4)
+        scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=15, factor=0.7)
 
         # Training loop
         train_losses = []
@@ -281,9 +293,16 @@ class TradingModelTrainer:
             scheduler.step(avg_val_loss)
 
             # Print progress
-            if epoch % 10 == 0:
+            if epoch % 5 == 0:
                 print(f'Epoch [{epoch}/{epochs}], Train Loss: {avg_train_loss:.4f}, '
                       f'Val Loss: {avg_val_loss:.4f}, Val Acc: {val_accuracy:.4f}')
+                
+                # Debug: Check if model outputs are changing
+                # if epoch == 0 or epoch % 10 == 0:
+                #     with torch.no_grad():
+                #         sample_outputs = self.model(X_val[:5])
+                #         sample_probs = torch.softmax(sample_outputs, dim=1)
+                #         print(f'Sample predictions probabilities: {sample_probs.cpu().numpy()}')
 
         # Store training history
         self.training_history = {
@@ -301,26 +320,6 @@ class TradingModelTrainer:
             'model_type': self.model_type,
             'sequence_length': self.sequence_length
         }
-
-        # Store training history
-        self.training_history = {
-            'train_losses': train_losses,
-            'val_losses': val_losses,
-            'val_accuracies': val_accuracies
-        }
-
-        # Final evaluation
-        final_metrics = self.evaluate(X_val, y_val, batch_size)
-
-        ret = {
-            'training_history': self.training_history,
-            'final_metrics': final_metrics,
-            'model_type': self.model_type,
-            'sequence_length': self.sequence_length
-        }
-
-        print(ret)
-        return ret
 
     def evaluate(self, X: torch.Tensor, y: torch.Tensor, batch_size: int = 32) -> Dict:
         """
@@ -342,16 +341,31 @@ class TradingModelTrainer:
                 true_labels = np.append(true_labels, batch_y.cpu().numpy())
 
         # Calculate metrics
-        accuracy = accuracy_score(true_labels, predictions)
-        precision = float(precision_score(true_labels, predictions, average='weighted', zero_division=0))
-        recall = float(recall_score(true_labels, predictions, average='weighted', zero_division=0))
-        f1 = float(f1_score(true_labels, predictions, average='weighted', zero_division=0))
+        accuracy = float(accuracy_score(true_labels, predictions))
+        
+        # Calculate macro averages for better class representation
+        precision_macro = float(precision_score(true_labels, predictions, average='macro', zero_division=0))
+        recall_macro = float(recall_score(true_labels, predictions, average='macro', zero_division=0))
+        f1_macro = float(f1_score(true_labels, predictions, average='macro', zero_division=0))
+        
+        # Calculate weighted averages as well
+        precision_weighted = float(precision_score(true_labels, predictions, average='weighted', zero_division=0))
+        recall_weighted = float(recall_score(true_labels, predictions, average='weighted', zero_division=0))
+        f1_weighted = float(f1_score(true_labels, predictions, average='weighted', zero_division=0))
+        
+        # Calculate per-class metrics
+        from sklearn.metrics import classification_report
+        class_report = classification_report(true_labels, predictions, output_dict=True, zero_division=0)
 
         return {
             'accuracy': accuracy,
-            'precision': precision,
-            'recall': recall,
-            'f1_score': f1,
+            'precision': precision_macro,
+            'recall': recall_macro,
+            'f1_score': f1_macro,
+            'precision_weighted': precision_weighted,
+            'recall_weighted': recall_weighted,
+            'f1_weighted': f1_weighted,
+            'classification_report': class_report,
             'predictions': predictions.tolist(),
             'true_labels': true_labels.tolist(),
         }
@@ -363,8 +377,23 @@ class TradingModelTrainer:
         if self.model is None or self.scaler is None:
             raise ValueError("Model not trained. Call train() first.")
 
-        # Prepare features
-        feature_df = df[self.feature_columns]
+        # Always prepare features the same way as during training
+        print("Preparing features for prediction data...")
+        feature_df = self.prepare_features(df)
+
+        # Handle missing columns by adding them with default values
+        for col in self.feature_columns:
+            if col not in feature_df.columns:
+                print(f"Adding missing feature '{col}' with default value 0.0")
+                feature_df[col] = 0.0
+
+        # Remove any extra columns that weren't in training
+        feature_df = feature_df[self.feature_columns]
+        
+        # Handle any remaining NaN values
+        feature_df = feature_df.fillna(method='ffill').fillna(method='bfill').fillna(0)
+
+        # Scale features
         features_scaled = self.scaler.transform(feature_df)
 
         # Create sequences
@@ -373,6 +402,7 @@ class TradingModelTrainer:
             X.append(features_scaled[i-self.sequence_length:i])
 
         if len(X) == 0:
+            print(f"Warning: Not enough data for prediction. Need at least {self.sequence_length} samples, got {len(features_scaled)}")
             return np.array([])
 
         X = np.array(X)
@@ -382,6 +412,15 @@ class TradingModelTrainer:
         self.model.eval()
         with torch.no_grad():
             outputs = self.model(X_tensor)
+            
+            # Apply softmax to get probabilities
+            probabilities = torch.softmax(outputs, dim=1)
+            
+            # Debug: print some probabilities to see what's happening
+            # if len(probabilities) > 0:
+            #     print(f"Sample probabilities: {probabilities[:5]}")
+            #     print(f"Mean probabilities: {torch.mean(probabilities, dim=0)}")
+            
             _, predictions = torch.max(outputs, 1)
 
         return predictions.cpu().numpy()

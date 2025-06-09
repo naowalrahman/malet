@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import {
   Container,
   Grid,
@@ -26,16 +26,12 @@ import {
   AccordionSummary,
   AccordionDetails,
 } from "@mui/material";
-import {
-  PlayArrow,
-  TrendingUp,
-  TrendingDown,
-  ExpandMore,
-} from "@mui/icons-material";
+import { PlayArrow, TrendingUp, TrendingDown, ExpandMore } from "@mui/icons-material";
 import { apiService } from "../services/api";
+import ModernPlot from "../components/ModernPlot";
 import type { Model, BacktestRequest, BacktestResults } from "../services/api";
 
-const Backtesting: React.FC = () => {
+export default function Backtesting() {
   const [symbol, setSymbol] = useState("AAPL");
   const [selectedModel, setSelectedModel] = useState("");
   const [initialCapital, setInitialCapital] = useState(10000);
@@ -50,16 +46,16 @@ const Backtesting: React.FC = () => {
     fetchModels();
   }, []);
 
-  const fetchModels = async () => {
+  async function fetchModels() {
     try {
-      const response = await apiService.getModels();
+      const response = await apiService.getTrainedModels();
       setModels(response.models || []);
     } catch (err) {
       setError("Failed to fetch models");
     }
-  };
+  }
 
-  const runBacktest = async () => {
+  async function runBacktest() {
     if (!selectedModel) {
       setError("Please select a model");
       return;
@@ -84,110 +80,183 @@ const Backtesting: React.FC = () => {
     } finally {
       setIsRunning(false);
     }
-  };
+  }
 
-  const formatCurrency = (value: number) => {
+  function formatCurrency(value: number) {
     return new Intl.NumberFormat("en-US", {
       style: "currency",
       currency: "USD",
     }).format(value);
-  };
+  }
 
-  const formatPercentage = (value: number) => {
+  function formatPercentage(value: number) {
     return `${(value * 100).toFixed(2)}%`;
-  };
+  }
 
-  const renderConfiguration = () => (
-    <Card>
-      <CardContent>
-        <Typography variant="h6" gutterBottom>
-          Backtest Configuration
+  function renderPlots() {
+    if (!results?.plots) return null;
+
+    const plots = results.plots;
+
+    return (
+      <Box sx={{ mt: 3 }}>
+        <Typography variant="h5" gutterBottom>
+          Performance Visualizations
         </Typography>
 
         <Grid container spacing={3}>
-          <Grid size={{ xs: 12, md: 6 }}>
-            <TextField
-              fullWidth
-              label="Symbol"
-              value={symbol}
-              onChange={(e) => setSymbol(e.target.value.toUpperCase())}
-              placeholder="AAPL"
-            />
-          </Grid>
+          {/* Portfolio Comparison Plot */}
+          {plots.portfolio_comparison && (
+            <Grid size={{ xs: 12 }}>
+              <ModernPlot
+                data={JSON.parse(plots.portfolio_comparison).data}
+                layout={JSON.parse(plots.portfolio_comparison).layout}
+                title="Portfolio Value Comparison"
+                height={420}
+                accentColor="#1976d2"
+              />
+            </Grid>
+          )}
 
-          <Grid size={{ xs: 12, md: 6 }}>
-            <FormControl fullWidth>
-              <InputLabel>Model</InputLabel>
-              <Select
-                value={selectedModel}
-                onChange={(e) => setSelectedModel(e.target.value)}
-                label="Model"
-              >
-                {models.map((model) => (
-                  <MenuItem key={model.model_id} value={model.model_id}>
-                    {model.symbol} - {model.model_type} (Accuracy:{" "}
-                    {formatPercentage(model.accuracy)})
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          </Grid>
+          {/* Returns Distribution Plot */}
+          {plots.returns_distribution && (
+            <Grid size={{ xs: 12, md: 6 }}>
+              <ModernPlot
+                data={JSON.parse(plots.returns_distribution).data}
+                layout={JSON.parse(plots.returns_distribution).layout}
+                title="Returns Distribution"
+                height={370}
+                accentColor="#2e7d32"
+              />
+            </Grid>
+          )}
 
-          <Grid size={{ xs: 12, md: 4 }}>
-            <TextField
-              fullWidth
-              label="Initial Capital"
-              type="number"
-              value={initialCapital}
-              onChange={(e) => setInitialCapital(Number(e.target.value))}
-            />
-          </Grid>
+          {/* Drawdown Analysis Plot */}
+          {plots.drawdown_analysis && (
+            <Grid size={{ xs: 12, md: 6 }}>
+              <ModernPlot
+                data={JSON.parse(plots.drawdown_analysis).data}
+                layout={JSON.parse(plots.drawdown_analysis).layout}
+                title="Drawdown Analysis"
+                height={370}
+                accentColor="#dc004e"
+              />
+            </Grid>
+          )}
 
-          <Grid size={{ xs: 12, md: 4 }}>
-            <TextField
-              fullWidth
-              label="Start Date"
-              type="date"
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-              InputLabelProps={{ shrink: true }}
-            />
-          </Grid>
-
-          <Grid size={{ xs: 12, md: 4 }}>
-            <TextField
-              fullWidth
-              label="End Date"
-              type="date"
-              value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
-              InputLabelProps={{ shrink: true }}
-            />
-          </Grid>
+          {/* Trade Analysis Plot */}
+          {plots.trade_analysis && (
+            <Grid size={{ xs: 12 }}>
+              <ModernPlot
+                data={JSON.parse(plots.trade_analysis).data}
+                layout={JSON.parse(plots.trade_analysis).layout}
+                title="Trading Signals & Price Action"
+                height={420}
+                accentColor="#ed6c02"
+              />
+            </Grid>
+          )}
         </Grid>
+      </Box>
+    );
+  }
 
-        <Box sx={{ mt: 3 }}>
-          <Button
-            variant="contained"
-            startIcon={<PlayArrow />}
-            onClick={runBacktest}
-            disabled={isRunning || !selectedModel}
-            fullWidth
-          >
-            {isRunning ? "Running Backtest..." : "Run Backtest"}
-          </Button>
-        </Box>
+  function renderConfiguration() {
+    return (
+      <Card>
+        <CardContent>
+          <Typography variant="h6" gutterBottom>
+            Backtest Configuration
+          </Typography>
 
-        {isRunning && (
-          <Box sx={{ mt: 2 }}>
-            <LinearProgress />
+          <Grid container spacing={3}>
+            <Grid size={{ xs: 12, md: 6 }}>
+              <TextField
+                fullWidth
+                label="Symbol"
+                value={symbol}
+                onChange={(e) => setSymbol(e.target.value.toUpperCase())}
+                placeholder="AAPL"
+              />
+            </Grid>
+
+            <Grid size={{ xs: 12, md: 6 }}>
+              <FormControl fullWidth>
+                <InputLabel>Model</InputLabel>
+                <Select value={selectedModel} onChange={(e) => setSelectedModel(e.target.value)} label="Model">
+                  {models.map((model) => (
+                    <MenuItem key={model.model_id} value={model.model_id}>
+                      {model.symbol} - {model.model_type} (Accuracy: {formatPercentage(model.accuracy)})
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+
+            <Grid size={{ xs: 12, md: 4 }}>
+              <TextField
+                fullWidth
+                label="Initial Capital"
+                type="number"
+                value={initialCapital}
+                onChange={(e) => setInitialCapital(Number(e.target.value))}
+              />
+            </Grid>
+
+            <Grid size={{ xs: 12, md: 4 }}>
+              <TextField
+                fullWidth
+                label="Start Date"
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                slotProps={{
+                  inputLabel: {
+                    shrink: true,
+                  },
+                }}
+              />
+            </Grid>
+
+            <Grid size={{ xs: 12, md: 4 }}>
+              <TextField
+                fullWidth
+                label="End Date"
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                slotProps={{
+                  inputLabel: {
+                    shrink: true,
+                  },
+                }}
+              />
+            </Grid>
+          </Grid>
+
+          <Box sx={{ mt: 3 }}>
+            <Button
+              variant="contained"
+              startIcon={<PlayArrow />}
+              onClick={runBacktest}
+              disabled={isRunning || !selectedModel}
+              fullWidth
+            >
+              {isRunning ? "Running Backtest..." : "Run Backtest"}
+            </Button>
           </Box>
-        )}
-      </CardContent>
-    </Card>
-  );
 
-  const renderResults = () => {
+          {isRunning && (
+            <Box sx={{ mt: 2 }}>
+              <LinearProgress />
+            </Box>
+          )}
+        </CardContent>
+      </Card>
+    );
+  }
+
+  function renderResults() {
     if (!results) return null;
 
     const { buy_and_hold, ml_strategy } = results.results;
@@ -216,37 +285,22 @@ const Backtesting: React.FC = () => {
                     <TableBody>
                       <TableRow>
                         <TableCell>Final Value</TableCell>
+                        <TableCell align="right">{formatCurrency(buy_and_hold.final_value)}</TableCell>
+                        <TableCell align="right">{formatCurrency(ml_strategy.final_value)}</TableCell>
                         <TableCell align="right">
-                          {formatCurrency(buy_and_hold.final_value)}
-                        </TableCell>
-                        <TableCell align="right">
-                          {formatCurrency(ml_strategy.final_value)}
-                        </TableCell>
-                        <TableCell align="right">
-                          <Box
-                            display="flex"
-                            alignItems="center"
-                            justifyContent="flex-end"
-                          >
-                            {ml_strategy.final_value >
-                            buy_and_hold.final_value ? (
+                          <Box display="flex" alignItems="center" justifyContent="flex-end">
+                            {ml_strategy.final_value > buy_and_hold.final_value ? (
                               <>
                                 <TrendingUp color="success" />
                                 <Typography color="success.main">
-                                  {formatCurrency(
-                                    ml_strategy.final_value -
-                                      buy_and_hold.final_value
-                                  )}
+                                  {formatCurrency(ml_strategy.final_value - buy_and_hold.final_value)}
                                 </Typography>
                               </>
                             ) : (
                               <>
                                 <TrendingDown color="error" />
                                 <Typography color="error.main">
-                                  {formatCurrency(
-                                    ml_strategy.final_value -
-                                      buy_and_hold.final_value
-                                  )}
+                                  {formatCurrency(ml_strategy.final_value - buy_and_hold.final_value)}
                                 </Typography>
                               </>
                             )}
@@ -255,72 +309,36 @@ const Backtesting: React.FC = () => {
                       </TableRow>
                       <TableRow>
                         <TableCell>Total Return</TableCell>
-                        <TableCell align="right">
-                          {formatPercentage(buy_and_hold.total_return)}
-                        </TableCell>
-                        <TableCell align="right">
-                          {formatPercentage(ml_strategy.total_return)}
-                        </TableCell>
+                        <TableCell align="right">{formatPercentage(buy_and_hold.total_return)}</TableCell>
+                        <TableCell align="right">{formatPercentage(ml_strategy.total_return)}</TableCell>
                         <TableCell align="right">
                           <Chip
-                            label={formatPercentage(
-                              ml_strategy.total_return -
-                                buy_and_hold.total_return
-                            )}
-                            color={
-                              ml_strategy.total_return >
-                              buy_and_hold.total_return
-                                ? "success"
-                                : "error"
-                            }
+                            label={formatPercentage(ml_strategy.total_return - buy_and_hold.total_return)}
+                            color={ml_strategy.total_return > buy_and_hold.total_return ? "success" : "error"}
                             size="small"
                           />
                         </TableCell>
                       </TableRow>
                       <TableRow>
                         <TableCell>Sharpe Ratio</TableCell>
-                        <TableCell align="right">
-                          {buy_and_hold.sharpe_ratio?.toFixed(3)}
-                        </TableCell>
-                        <TableCell align="right">
-                          {ml_strategy.sharpe_ratio?.toFixed(3)}
-                        </TableCell>
+                        <TableCell align="right">{buy_and_hold.sharpe_ratio?.toFixed(3)}</TableCell>
+                        <TableCell align="right">{ml_strategy.sharpe_ratio?.toFixed(3)}</TableCell>
                         <TableCell align="right">
                           <Chip
-                            label={(
-                              ml_strategy.sharpe_ratio -
-                              buy_and_hold.sharpe_ratio
-                            ).toFixed(3)}
-                            color={
-                              ml_strategy.sharpe_ratio >
-                              buy_and_hold.sharpe_ratio
-                                ? "success"
-                                : "error"
-                            }
+                            label={(ml_strategy.sharpe_ratio - buy_and_hold.sharpe_ratio).toFixed(3)}
+                            color={ml_strategy.sharpe_ratio > buy_and_hold.sharpe_ratio ? "success" : "error"}
                             size="small"
                           />
                         </TableCell>
                       </TableRow>
                       <TableRow>
                         <TableCell>Max Drawdown</TableCell>
-                        <TableCell align="right">
-                          {formatPercentage(buy_and_hold.max_drawdown)}
-                        </TableCell>
-                        <TableCell align="right">
-                          {formatPercentage(ml_strategy.max_drawdown)}
-                        </TableCell>
+                        <TableCell align="right">{formatPercentage(buy_and_hold.max_drawdown)}</TableCell>
+                        <TableCell align="right">{formatPercentage(ml_strategy.max_drawdown)}</TableCell>
                         <TableCell align="right">
                           <Chip
-                            label={formatPercentage(
-                              ml_strategy.max_drawdown -
-                                buy_and_hold.max_drawdown
-                            )}
-                            color={
-                              ml_strategy.max_drawdown <
-                              buy_and_hold.max_drawdown
-                                ? "success"
-                                : "error"
-                            }
+                            label={formatPercentage(ml_strategy.max_drawdown - buy_and_hold.max_drawdown)}
+                            color={ml_strategy.max_drawdown < buy_and_hold.max_drawdown ? "success" : "error"}
                             size="small"
                           />
                         </TableCell>
@@ -343,27 +361,19 @@ const Backtesting: React.FC = () => {
                   <TableBody>
                     <TableRow>
                       <TableCell>Total Trades</TableCell>
-                      <TableCell align="right">
-                        {buy_and_hold.total_trades}
-                      </TableCell>
+                      <TableCell align="right">{buy_and_hold.total_trades}</TableCell>
                     </TableRow>
                     <TableRow>
                       <TableCell>Win Rate</TableCell>
-                      <TableCell align="right">
-                        {formatPercentage(buy_and_hold.win_rate)}
-                      </TableCell>
+                      <TableCell align="right">{formatPercentage(buy_and_hold.win_rate)}</TableCell>
                     </TableRow>
                     <TableRow>
                       <TableCell>Volatility</TableCell>
-                      <TableCell align="right">
-                        {formatPercentage(buy_and_hold.volatility)}
-                      </TableCell>
+                      <TableCell align="right">{formatPercentage(buy_and_hold.volatility)}</TableCell>
                     </TableRow>
                     <TableRow>
                       <TableCell>Calmar Ratio</TableCell>
-                      <TableCell align="right">
-                        {buy_and_hold.calmar_ratio?.toFixed(3)}
-                      </TableCell>
+                      <TableCell align="right">{buy_and_hold.calmar_ratio?.toFixed(3)}</TableCell>
                     </TableRow>
                   </TableBody>
                 </Table>
@@ -381,27 +391,19 @@ const Backtesting: React.FC = () => {
                   <TableBody>
                     <TableRow>
                       <TableCell>Total Trades</TableCell>
-                      <TableCell align="right">
-                        {ml_strategy.total_trades}
-                      </TableCell>
+                      <TableCell align="right">{ml_strategy.total_trades}</TableCell>
                     </TableRow>
                     <TableRow>
                       <TableCell>Win Rate</TableCell>
-                      <TableCell align="right">
-                        {formatPercentage(ml_strategy.win_rate)}
-                      </TableCell>
+                      <TableCell align="right">{formatPercentage(ml_strategy.win_rate)}</TableCell>
                     </TableRow>
                     <TableRow>
                       <TableCell>Volatility</TableCell>
-                      <TableCell align="right">
-                        {formatPercentage(ml_strategy.volatility)}
-                      </TableCell>
+                      <TableCell align="right">{formatPercentage(ml_strategy.volatility)}</TableCell>
                     </TableRow>
                     <TableRow>
                       <TableCell>Calmar Ratio</TableCell>
-                      <TableCell align="right">
-                        {ml_strategy.calmar_ratio?.toFixed(3)}
-                      </TableCell>
+                      <TableCell align="right">{ml_strategy.calmar_ratio?.toFixed(3)}</TableCell>
                     </TableRow>
                   </TableBody>
                 </Table>
@@ -411,7 +413,7 @@ const Backtesting: React.FC = () => {
         </Grid>
       </Box>
     );
-  };
+  }
 
   return (
     <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
@@ -432,8 +434,7 @@ const Backtesting: React.FC = () => {
 
       {renderConfiguration()}
       {renderResults()}
+      {renderPlots()}
     </Container>
   );
-};
-
-export default Backtesting;
+}

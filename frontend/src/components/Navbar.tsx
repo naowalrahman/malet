@@ -1,15 +1,5 @@
 import React from "react";
-import {
-  AppBar,
-  Toolbar,
-  Typography,
-  Box,
-  Button,
-  IconButton,
-  Menu,
-  MenuItem,
-  useTheme,
-} from "@mui/material";
+import { AppBar, Toolbar, Typography, Box, Button, IconButton, Menu, MenuItem, useTheme } from "@mui/material";
 import {
   Dashboard as DashboardIcon,
   DataUsage as DataIcon,
@@ -57,9 +47,7 @@ const Navbar: React.FC = () => {
       <Toolbar sx={{ px: 3 }}>
         {/* Logo and Title */}
         <Box sx={{ display: "flex", alignItems: "center", mr: 4 }}>
-          <AccountIcon
-            sx={{ mr: 1, fontSize: 32, color: theme.palette.primary.main }}
-          />
+          <img src="/logo.svg" alt="logo" style={{ width: 64, height: 64, marginRight: 8 }} />
           <Typography
             variant="h5"
             component="div"
@@ -83,19 +71,13 @@ const Navbar: React.FC = () => {
               onClick={() => navigate(item.path)}
               startIcon={item.icon}
               sx={{
-                color: isActive(item.path)
-                  ? theme.palette.primary.main
-                  : "rgba(255, 255, 255, 0.7)",
-                backgroundColor: isActive(item.path)
-                  ? "rgba(25, 118, 210, 0.1)"
-                  : "transparent",
+                color: isActive(item.path) ? theme.palette.primary.main : "rgba(255, 255, 255, 0.7)",
+                backgroundColor: isActive(item.path) ? "rgba(25, 118, 210, 0.1)" : "transparent",
                 borderRadius: 2,
                 px: 2,
                 py: 1,
                 fontWeight: isActive(item.path) ? 600 : 400,
-                border: isActive(item.path)
-                  ? `1px solid ${theme.palette.primary.main}`
-                  : "1px solid transparent",
+                border: isActive(item.path) ? `1px solid ${theme.palette.primary.main}` : "1px solid transparent",
                 "&:hover": {
                   backgroundColor: "rgba(25, 118, 210, 0.1)",
                   color: theme.palette.primary.light,
@@ -139,12 +121,8 @@ const Navbar: React.FC = () => {
                   handleMenuClose();
                 }}
                 sx={{
-                  color: isActive(item.path)
-                    ? theme.palette.primary.main
-                    : "inherit",
-                  backgroundColor: isActive(item.path)
-                    ? "rgba(25, 118, 210, 0.1)"
-                    : "transparent",
+                  color: isActive(item.path) ? theme.palette.primary.main : "inherit",
+                  backgroundColor: isActive(item.path) ? "rgba(25, 118, 210, 0.1)" : "transparent",
                 }}
               >
                 <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
@@ -184,10 +162,7 @@ const Navbar: React.FC = () => {
               },
             }}
           />
-          <Typography
-            variant="caption"
-            sx={{ color: theme.palette.success.main, fontWeight: 600 }}
-          >
+          <Typography variant="caption" sx={{ color: theme.palette.success.main, fontWeight: 600 }}>
             Live
           </Typography>
         </Box>

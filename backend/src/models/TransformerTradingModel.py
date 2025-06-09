@@ -26,7 +26,7 @@ class TransformerTradingModel(nn.Module):
 
         self.transformer = nn.TransformerEncoder(encoder_layer, num_layers=num_layers)
         self.layer_norm = nn.LayerNorm(d_model)
-        self.fc = nn.Linear(d_model, 3)
+        self.fc = nn.Linear(d_model, 2)
         self.dropout = nn.Dropout(dropout)
 
     def forward(self, x):

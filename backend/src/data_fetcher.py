@@ -14,9 +14,9 @@ class DataFetcher:
     def __init__(self):
         self.cache = {}
     
-    def fetch_minute_data(self, symbol: str, period: str = "1mo") -> pd.DataFrame:
+    def fetch_daily_data(self, symbol: str, period: str = "1mo") -> pd.DataFrame:
         """
-        Fetch minute-wise stock data for a given symbol
+        Fetch daily stock data for a given symbol
         
         Args:
             symbol: Stock symbol (e.g., 'AAPL', 'GOOGL')
@@ -47,7 +47,7 @@ class DataFetcher:
     
     def fetch_historical_data(self, symbol: str, start_date: str, end_date: str) -> pd.DataFrame:
         """
-        Fetch historical data for a custom date range
+        Fetch historical daily data for a custom date range
         
         Args:
             symbol: Stock symbol
@@ -58,13 +58,11 @@ class DataFetcher:
             DataFrame with OHLCV data
         """
         try:
-            # TODO: fix this
             ticker = yf.Ticker(symbol)
-            # data = ticker.history(start=start_date, end=end_date, interval="1m")
-            
-            # if data.empty:
-            #     # If minute data is not available, try daily data
             data = ticker.history(start=start_date, end=end_date, interval="1d")
+            
+            if data.empty:
+                raise ValueError(f"No data found for symbol {symbol}")
             
             data = data.dropna()
             data.index = pd.to_datetime(data.index)
@@ -76,6 +74,11 @@ class DataFetcher:
             print(f"Error fetching historical data for {symbol}: {str(e)}")
             return pd.DataFrame()
         
+    # Add a convenience method for backwards compatibility
+    # def fetch_daily_data(self, symbol: str, period: str = "1mo") -> pd.DataFrame:
+    #     """Backwards compatibility - redirects to fetch_daily_data"""
+    #     return self.fetch_daily_data(symbol, period)
+    
     def fetch_multiple_symbols(self, symbols: List[str], period: str = "1mo") -> Dict[str, pd.DataFrame]:
         """
         Fetch data for multiple symbols
@@ -90,7 +93,7 @@ class DataFetcher:
         data_dict = {}
         
         for symbol in symbols:
-            data = self.fetch_minute_data(symbol, period)
+            data = self.fetch_daily_data(symbol, period)
             if not data.empty:
                 data_dict[symbol] = data
         

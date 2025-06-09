@@ -36,13 +36,7 @@ interface MetricCardProps {
   color: "primary" | "secondary" | "success" | "error" | "warning" | "info";
 }
 
-const MetricCard: React.FC<MetricCardProps> = ({
-  title,
-  value,
-  change,
-  icon,
-  color,
-}) => {
+const MetricCard: React.FC<MetricCardProps> = ({ title, value, change, icon, color }) => {
   const theme = useTheme();
 
   return (
@@ -59,10 +53,7 @@ const MetricCard: React.FC<MetricCardProps> = ({
             <Typography variant="h6" sx={{ mb: 1, fontWeight: 600 }}>
               {title}
             </Typography>
-            <Typography
-              variant="h4"
-              sx={{ fontWeight: 700, color: theme.palette[color].main }}
-            >
+            <Typography variant="h4" sx={{ fontWeight: 700, color: theme.palette[color].main }}>
               {value}
             </Typography>
             {change !== undefined && (
@@ -87,10 +78,7 @@ const MetricCard: React.FC<MetricCardProps> = ({
                 <Typography
                   variant="body2"
                   sx={{
-                    color:
-                      change >= 0
-                        ? theme.palette.success.main
-                        : theme.palette.error.main,
+                    color: change >= 0 ? theme.palette.success.main : theme.palette.error.main,
                     fontWeight: 600,
                   }}
                 >
@@ -119,9 +107,7 @@ const Dashboard: React.FC = () => {
   const theme = useTheme();
   const navigate = useNavigate();
   const [models, setModels] = useState<Model[]>([]);
-  const [marketAnalysis, setMarketAnalysis] = useState<MarketAnalysis | null>(
-    null
-  );
+  const [marketAnalysis, setMarketAnalysis] = useState<MarketAnalysis | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -131,7 +117,7 @@ const Dashboard: React.FC = () => {
       setError(null);
 
       // Fetch models
-      const modelsResponse = await apiService.listModels();
+      const modelsResponse = await apiService.getTrainedModels();
       setModels(modelsResponse.models);
 
       // Fetch market analysis for SPY (S&P 500)
@@ -153,10 +139,7 @@ const Dashboard: React.FC = () => {
   }, []);
 
   const activeModels = models.filter((model) => model.accuracy > 0.5);
-  const avgAccuracy =
-    models.length > 0
-      ? models.reduce((sum, model) => sum + model.accuracy, 0) / models.length
-      : 0;
+  const avgAccuracy = models.length > 0 ? models.reduce((sum, model) => sum + model.accuracy, 0) / models.length : 0;
 
   const getSignalColor = (signal: number) => {
     if (signal > 0) return theme.palette.success.main;
@@ -175,9 +158,7 @@ const Dashboard: React.FC = () => {
       <Container maxWidth="xl" sx={{ py: 4 }}>
         <Box sx={{ width: "100%" }}>
           <LinearProgress />
-          <Typography sx={{ mt: 2, textAlign: "center" }}>
-            Loading dashboard...
-          </Typography>
+          <Typography sx={{ mt: 2, textAlign: "center" }}>Loading dashboard...</Typography>
         </Box>
       </Container>
     );
@@ -203,10 +184,7 @@ const Dashboard: React.FC = () => {
           </Typography>
         </Box>
         <Tooltip title="Refresh Data">
-          <IconButton
-            onClick={fetchData}
-            sx={{ bgcolor: "primary.main", color: "white" }}
-          >
+          <IconButton onClick={fetchData} sx={{ bgcolor: "primary.main", color: "white" }}>
             <Refresh />
           </IconButton>
         </Tooltip>
@@ -239,14 +217,8 @@ const Dashboard: React.FC = () => {
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <MetricCard
             title="Market Price"
-            value={
-              marketAnalysis
-                ? `$${marketAnalysis.current_price.toFixed(2)}`
-                : "$0.00"
-            }
-            change={
-              marketAnalysis ? marketAnalysis.price_change_pct : undefined
-            }
+            value={marketAnalysis ? `$${marketAnalysis.current_price.toFixed(2)}` : "$0.00"}
+            change={marketAnalysis ? marketAnalysis.price_change_pct : undefined}
             icon={<Timeline sx={{ fontSize: 32 }} />}
             color="info"
           />
@@ -282,9 +254,7 @@ const Dashboard: React.FC = () => {
                   <Chip
                     label={getSignalText(marketAnalysis.combined_signal)}
                     sx={{
-                      bgcolor: `${getSignalColor(
-                        marketAnalysis.combined_signal
-                      )}20`,
+                      bgcolor: `${getSignalColor(marketAnalysis.combined_signal)}20`,
                       color: getSignalColor(marketAnalysis.combined_signal),
                       fontWeight: 600,
                     }}
@@ -296,10 +266,7 @@ const Dashboard: React.FC = () => {
                 <Grid container spacing={3}>
                   <Grid size={{ xs: 12, md: 6 }}>
                     <Box sx={{ mb: 2 }}>
-                      <Typography
-                        variant="subtitle2"
-                        sx={{ color: "text.secondary", mb: 1 }}
-                      >
+                      <Typography variant="subtitle2" sx={{ color: "text.secondary", mb: 1 }}>
                         RSI (Relative Strength Index)
                       </Typography>
                       <Box sx={{ display: "flex", alignItems: "center" }}>
@@ -316,26 +283,20 @@ const Dashboard: React.FC = () => {
                                   marketAnalysis.rsi > 70
                                     ? theme.palette.error.main
                                     : marketAnalysis.rsi < 30
-                                    ? theme.palette.success.main
-                                    : theme.palette.warning.main,
+                                      ? theme.palette.success.main
+                                      : theme.palette.warning.main,
                               },
                             }}
                           />
                         </Box>
-                        <Typography
-                          variant="body2"
-                          sx={{ minWidth: 35, fontWeight: 600 }}
-                        >
+                        <Typography variant="body2" sx={{ minWidth: 35, fontWeight: 600 }}>
                           {marketAnalysis.rsi.toFixed(0)}
                         </Typography>
                       </Box>
                     </Box>
 
                     <Box sx={{ mb: 2 }}>
-                      <Typography
-                        variant="subtitle2"
-                        sx={{ color: "text.secondary", mb: 1 }}
-                      >
+                      <Typography variant="subtitle2" sx={{ color: "text.secondary", mb: 1 }}>
                         Bollinger Position
                       </Typography>
                       <Box sx={{ display: "flex", alignItems: "center" }}>
@@ -353,21 +314,14 @@ const Dashboard: React.FC = () => {
                             }}
                           />
                         </Box>
-                        <Typography
-                          variant="body2"
-                          sx={{ minWidth: 35, fontWeight: 600 }}
-                        >
-                          {(marketAnalysis.bollinger_position * 100).toFixed(0)}
-                          %
+                        <Typography variant="body2" sx={{ minWidth: 35, fontWeight: 600 }}>
+                          {(marketAnalysis.bollinger_position * 100).toFixed(0)}%
                         </Typography>
                       </Box>
                     </Box>
 
                     <Box>
-                      <Typography
-                        variant="subtitle2"
-                        sx={{ color: "text.secondary", mb: 1 }}
-                      >
+                      <Typography variant="subtitle2" sx={{ color: "text.secondary", mb: 1 }}>
                         Volatility
                       </Typography>
                       <Typography variant="h6" sx={{ fontWeight: 600 }}>
@@ -378,10 +332,7 @@ const Dashboard: React.FC = () => {
 
                   <Grid size={{ xs: 12, md: 6 }}>
                     <Box sx={{ mb: 2 }}>
-                      <Typography
-                        variant="subtitle2"
-                        sx={{ color: "text.secondary", mb: 1 }}
-                      >
+                      <Typography variant="subtitle2" sx={{ color: "text.secondary", mb: 1 }}>
                         Support Levels
                       </Typography>
                       {marketAnalysis.support_levels.map((level, index) => (
@@ -399,10 +350,7 @@ const Dashboard: React.FC = () => {
                     </Box>
 
                     <Box>
-                      <Typography
-                        variant="subtitle2"
-                        sx={{ color: "text.secondary", mb: 1 }}
-                      >
+                      <Typography variant="subtitle2" sx={{ color: "text.secondary", mb: 1 }}>
                         Resistance Levels
                       </Typography>
                       {marketAnalysis.resistance_levels.map((level, index) => (

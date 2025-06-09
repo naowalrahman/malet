@@ -1,12 +1,5 @@
 import React from "react";
-import {
-  Container,
-  Typography,
-  Box,
-  Card,
-  CardContent,
-  Alert,
-} from "@mui/material";
+import { Container, Typography, Box, Card, CardContent, Alert } from "@mui/material";
 
 const LiveTrading: React.FC = () => {
   return (
@@ -33,9 +26,8 @@ const LiveTrading: React.FC = () => {
               <li>Performance tracking</li>
             </ul>
             <br />
-            <strong>Note:</strong> This is for demonstration purposes only. Do
-            not connect to real trading accounts without proper testing and risk
-            management.
+            <strong>Note:</strong> This is for demonstration purposes only. Do not connect to real trading accounts
+            without proper testing and risk management.
           </Alert>
         </CardContent>
       </Card>

@@ -13,7 +13,7 @@ class TradingStrategy:
     Base class for trading strategies
     """
     
-    def __init__(self, initial_capital: float = 10000, transaction_cost: float = 0.001):
+    def __init__(self, initial_capital: float = 10000, transaction_cost: float = 0):
         self.initial_capital = initial_capital
         self.transaction_cost = transaction_cost
         self.positions = []
@@ -90,7 +90,7 @@ class MLTradingStrategy(TradingStrategy):
     """
     
     def __init__(self, model, initial_capital: float = 10000, 
-                 transaction_cost: float = 0.001, confidence_threshold: float = 0.6):
+                 transaction_cost: float = 0, confidence_threshold: float = 0.6):
         super().__init__(initial_capital, transaction_cost)
         self.model = model
         self.confidence_threshold = confidence_threshold
@@ -100,13 +100,13 @@ class MLTradingStrategy(TradingStrategy):
         Backtest ML strategy
         """
         if data.empty:
-            print("problem")
             return self._empty_results()
         
         try:
             # Get predictions from the model
             predictions = self.model.predict(data)
-            print(predictions)
+            print(f"Predictions: {predictions}")
+            print(f"Unique predictions: {np.unique(predictions)}")
             
             if len(predictions) == 0:
                 return self._empty_results()
@@ -122,6 +122,27 @@ class MLTradingStrategy(TradingStrategy):
             start_idx = len(data) - len(predictions)
             aligned_data = data.iloc[start_idx:].copy()
             aligned_data = aligned_data.reset_index(drop=True)
+
+            # Start by buying shares with initial capital (aggressive strategy)
+            if len(predictions) > 0 and len(aligned_data) > 0:
+                first_price = aligned_data['Close'].iloc[0]
+                initial_shares = int(current_capital * 0.95 / first_price)
+                if initial_shares > 0:
+                    cost = initial_shares * first_price
+                    transaction_fee = cost * self.transaction_cost
+                    
+                    current_shares = initial_shares
+                    current_capital -= (cost + transaction_fee)
+                    transaction_costs += transaction_fee
+                    
+                    trades.append({
+                        'date': aligned_data.index[0] if hasattr(aligned_data.index[0], 'isoformat') else 0,
+                        'action': 'INITIAL_BUY',
+                        'shares': initial_shares,
+                        'price': first_price,
+                        'value': cost,
+                        'fee': transaction_fee
+                    })
             
             for i, (idx, row) in enumerate(aligned_data.iterrows()):
                 if i >= len(predictions):
@@ -130,28 +151,29 @@ class MLTradingStrategy(TradingStrategy):
                 current_price = row['Close']
                 prediction = predictions[i]
                 
-                # Trading logic based on predictions
-                # 0: Hold, 1: Buy, 2: Sell
-                if prediction == 1 and current_shares == 0:  # Buy signal
-                    shares_to_buy = self.calculate_position_size(current_capital, current_price)
-                    cost = shares_to_buy * current_price
-                    transaction_fee = cost * self.transaction_cost
-                    
-                    if current_capital >= cost + transaction_fee:
-                        current_shares = shares_to_buy
-                        current_capital -= (cost + transaction_fee)
-                        transaction_costs += transaction_fee
+                # Trading logic based on binary predictions
+                # 0: Down (Sell), 1: Up (Buy)
+                if prediction == 1 and current_shares == 0:  # Buy signal (price going up)
+                    shares_to_buy = int(current_capital * 0.95 / current_price)  # Use 95% of capital
+                    if shares_to_buy > 0:
+                        cost = shares_to_buy * current_price
+                        transaction_fee = cost * self.transaction_cost
                         
-                        trades.append({
-                            'date': row.name if hasattr(row, 'name') else i,
-                            'action': 'BUY',
-                            'shares': shares_to_buy,
-                            'price': current_price,
-                            'value': cost,
-                            'fee': transaction_fee
-                        })
+                        if current_capital >= cost + transaction_fee:
+                            current_shares = shares_to_buy
+                            current_capital -= (cost + transaction_fee)
+                            transaction_costs += transaction_fee
+                            
+                            trades.append({
+                                'date': row.name if hasattr(row, 'name') else i,
+                                'action': 'BUY',
+                                'shares': shares_to_buy,
+                                'price': current_price,
+                                'value': cost,
+                                'fee': transaction_fee
+                            })
                 
-                elif prediction == 2 and current_shares > 0:  # Sell signal
+                elif prediction == 0 and current_shares > 0:  # Sell signal (price going down)
                     revenue = current_shares * current_price
                     transaction_fee = revenue * self.transaction_cost
                     
@@ -184,6 +206,8 @@ class MLTradingStrategy(TradingStrategy):
             
             final_value = current_capital
             total_return = (final_value - self.initial_capital) / self.initial_capital
+
+            print(trades)
             
             return {
                 'strategy': 'ML Trading',
@@ -200,6 +224,8 @@ class MLTradingStrategy(TradingStrategy):
             
         except Exception as e:
             print(f"Error in ML backtesting: {str(e)}")
+            import traceback
+            traceback.print_exc()
             return self._empty_results()
     
     def _empty_results(self):
@@ -229,17 +255,25 @@ class BacktestEngine:
         """
         Run comparison between Buy & Hold and ML strategy
         """
-        # Buy and Hold strategy
-        bh_strategy = BuyAndHoldStrategy(initial_capital)
-        bh_results = bh_strategy.backtest(data)
-        
-        # ML strategy
+        # First get ML predictions to determine the aligned period
         ml_strategy = MLTradingStrategy(ml_model, initial_capital)
         ml_results = ml_strategy.backtest(data)
         
-        # Calculate additional metrics
-        bh_metrics = self.calculate_metrics(bh_results, data)
-        ml_metrics = self.calculate_metrics(ml_results, data)
+        # Determine the aligned data period based on ML predictions
+        if ml_results.get('predictions'):
+            predictions_length = len(ml_results['predictions'])
+            start_idx = len(data) - predictions_length
+            aligned_data = data.iloc[start_idx:].copy()
+        else:
+            aligned_data = data
+        
+        # Buy and Hold strategy using aligned data
+        bh_strategy = BuyAndHoldStrategy(initial_capital)
+        bh_results = bh_strategy.backtest(aligned_data)
+        
+        # Calculate additional metrics using aligned data
+        bh_metrics = self.calculate_metrics(bh_results, aligned_data)
+        ml_metrics = self.calculate_metrics(ml_results, aligned_data)
         
         comparison = {
             'buy_and_hold': {**bh_results, **bh_metrics},
@@ -268,11 +302,11 @@ class BacktestEngine:
             return self._empty_metrics()
         
         # Risk metrics
-        volatility = np.std(returns) * np.sqrt(252 * 24 * 60)  # Annualized for minute data
+        volatility = np.std(returns) * np.sqrt(252)  # Annualized for daily data
         
         # Sharpe ratio (assuming 0% risk-free rate)
         sharpe_ratio = np.mean(returns) / volatility if volatility > 0 else 0
-        sharpe_ratio *= np.sqrt(252 * 24 * 60)  # Annualized
+        sharpe_ratio *= np.sqrt(252)  # Annualized for daily data
         
         # Maximum drawdown
         peak = np.maximum.accumulate(portfolio_values)
@@ -387,13 +421,8 @@ class BacktestEngine:
             bh_values = self.results['buy_and_hold']['portfolio_values']
             ml_values = self.results['ml_strategy']['portfolio_values']
             
-            # Handle different lengths
-            min_len = min(len(bh_values), len(ml_values))
-            if min_len == 0:
+            if len(bh_values) == 0 or len(ml_values) == 0:
                 return None
-            
-            bh_values = bh_values[:min_len]
-            ml_values = ml_values[:min_len]
             
             fig = go.Figure()
             

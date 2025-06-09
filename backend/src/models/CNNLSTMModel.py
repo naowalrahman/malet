@@ -29,7 +29,7 @@ class CNNLSTMModel(nn.Module):
         )
 
         # Output layers
-        self.fc = nn.Linear(hidden_size, 3)
+        self.fc = nn.Linear(hidden_size, 2)
         self.dropout = nn.Dropout(0.2)
         self.relu = nn.ReLU()
         self.batch_norm = nn.BatchNorm1d(hidden_size)

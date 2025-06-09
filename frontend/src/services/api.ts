@@ -1,6 +1,6 @@
-import axios from 'axios';
+import axios from "axios";
 
-const API_BASE_URL = 'http://localhost:8001';
+const API_BASE_URL = "http://localhost:8001";
 
 export interface StockData {
   symbol: string;
@@ -33,6 +33,8 @@ export interface TrainingRequest {
   learning_rate: number;
   prediction_horizon: number;
   threshold: number;
+  start_date?: string;
+  end_date?: string;
 }
 
 export interface TrainingJob {
@@ -149,24 +151,24 @@ class ApiService {
     return response.data;
   }
 
-  async getModels(): Promise<{ models: Model[] }> {
-    const response = await axios.get(`${this.baseURL}/models`);
+  async getTrainedModels(): Promise<{ models: Model[] }> {
+    const response = await axios.get(`${this.baseURL}/trained-models`);
     return response.data;
   }
 
-  async listModels(): Promise<{ models: Model[] }> {
-    const response = await axios.get(`${this.baseURL}/models`);
+  async getAvailableModels(): Promise<{ models: Model[] }> {
+    const response = await axios.get(`${this.baseURL}/available-models`);
     return response.data;
   }
 
   async deleteModel(modelId: string): Promise<{ message: string }> {
-    const response = await axios.delete(`${this.baseURL}/models/${modelId}`);
+    const response = await axios.delete(`${this.baseURL}/trained-models/${modelId}`);
     return response.data;
   }
 
   async downloadModel(modelId: string): Promise<Blob> {
-    const response = await axios.get(`${this.baseURL}/models/${modelId}/download`, {
-      responseType: 'blob',
+    const response = await axios.get(`${this.baseURL}/trained-models/${modelId}/download`, {
+      responseType: "blob",
     });
     return response.data;
   }

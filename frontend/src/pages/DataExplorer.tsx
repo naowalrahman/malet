@@ -1,14 +1,6 @@
-import React from "react";
-import {
-  Container,
-  Typography,
-  Box,
-  Card,
-  CardContent,
-  Alert,
-} from "@mui/material";
+import { Container, Typography, Box, Card, CardContent, Alert } from "@mui/material";
 
-const DataExplorer: React.FC = () => {
+export default function DataExplorer() {
   return (
     <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
       <Box sx={{ mb: 4 }}>
@@ -36,6 +28,4 @@ const DataExplorer: React.FC = () => {
       </Card>
     </Container>
   );
-};
-
-export default DataExplorer;
+}

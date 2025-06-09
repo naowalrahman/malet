@@ -8,7 +8,7 @@ class LSTMTradingModel(nn.Module):
     """
 
     def __init__(self, input_size: int, hidden_size: int = 128, num_layers: int = 2,
-                 dropout: float = 0.2, output_size: int = 3):
+                 dropout: float = 0.2, output_size: int = 2):
         super(LSTMTradingModel, self).__init__()
 
         self.hidden_size = hidden_size
