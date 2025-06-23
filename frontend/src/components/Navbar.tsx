@@ -2,11 +2,8 @@ import React from "react";
 import { AppBar, Toolbar, Typography, Box, Button, IconButton, Menu, MenuItem, useTheme } from "@mui/material";
 import {
   Dashboard as DashboardIcon,
-  DataUsage as DataIcon,
   ModelTraining as TrainingIcon,
   Assessment as BacktestIcon,
-  TrendingUp as LiveIcon,
-  AccountBalance as AccountIcon,
   MoreVert as MoreIcon,
 } from "@mui/icons-material";
 import { useNavigate, useLocation } from "react-router-dom";

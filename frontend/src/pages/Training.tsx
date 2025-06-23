@@ -238,11 +238,10 @@ export default function ModelTraining() {
                         min={10}
                         max={500}
                         step={10}
-                        marks={[
-                          { value: 50, label: "50" },
-                          { value: 100, label: "100" },
-                          { value: 200, label: "200" },
-                        ]}
+                        marks={Array.from({ length: 500 / 50 }, (_, i) => ({
+                          value: 50 + (i * 50),
+                          label: String(50 + (i * 50))
+                        }))}
                       />
                     </Grid>
 
@@ -254,11 +253,10 @@ export default function ModelTraining() {
                         min={8}
                         max={128}
                         step={8}
-                        marks={[
-                          { value: 16, label: "16" },
-                          { value: 32, label: "32" },
-                          { value: 64, label: "64" },
-                        ]}
+                        marks={Array.from({ length: 128 / 16 }, (_, i) => ({
+                          value: 16 + (i * 16),
+                          label: String(16 + (i * 16))
+                        }))}
                       />
                     </Grid>
 
@@ -267,13 +265,13 @@ export default function ModelTraining() {
                       <Slider
                         value={learningRate}
                         onChange={(_, value) => setLearningRate(value as number)}
-                        min={0.0001}
+                        min={0.001}
                         max={0.01}
-                        step={0.0001}
-                        marks={[
-                          { value: 0.001, label: "0.001" },
-                          { value: 0.005, label: "0.005" },
-                        ]}
+                        step={0.001}
+                        marks={Array.from({ length: 0.01 / 0.001 }, (_, i) => ({
+                          value: 0.002 + (i * 0.001),
+                          label: String(Math.round((0.002 + (i * 0.001)) * 1000) / 1000),
+                        }))}
                       />
                     </Grid>
 
@@ -285,11 +283,10 @@ export default function ModelTraining() {
                         min={10}
                         max={120}
                         step={5}
-                        marks={[
-                          { value: 30, label: "30" },
-                          { value: 60, label: "60" },
-                          { value: 90, label: "90" },
-                        ]}
+                        marks={Array.from({ length: 120 / 10 }, (_, i) => ({
+                          value: 20 + (i * 10),
+                          label: String(20 + (i * 10)),
+                        }))}
                       />
                     </Grid>
                   </Grid>

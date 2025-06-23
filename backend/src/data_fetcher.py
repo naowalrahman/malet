@@ -2,7 +2,7 @@ import yfinance as yf
 import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
-from typing import List, Dict, Optional, Tuple
+from typing import List, Dict, Optional, Tuple, Literal
 import warnings
 warnings.filterwarnings('ignore')
 
@@ -45,21 +45,26 @@ class DataFetcher:
             print(f"Error fetching data for {symbol}: {str(e)}")
             return pd.DataFrame()
     
-    def fetch_historical_data(self, symbol: str, start_date: str, end_date: str) -> pd.DataFrame:
+    def fetch_historical_data(self, symbol: str, start_date: str, end_date: str, interval: Literal["1d", "1m"] = "1d") -> pd.DataFrame:
         """
-        Fetch historical daily data for a custom date range
+        Fetch historical daily data for a custom date range.
+        Maximum 8 days for 1m interval.
         
         Args:
             symbol: Stock symbol
             start_date: Start date in 'YYYY-MM-DD' format
             end_date: End date in 'YYYY-MM-DD' format
+            interval: Interval to fetch data for ('1d', '1m')
         
         Returns:
             DataFrame with OHLCV data
         """
         try:
+            if interval == "1m" and (end_date - start_date) > timedelta(days=8):
+                raise ValueError("1m interval is not supported for more than 8 days")
+            
             ticker = yf.Ticker(symbol)
-            data = ticker.history(start=start_date, end=end_date, interval="1d")
+            data = ticker.history(start=start_date, end=end_date, interval=interval)
             
             if data.empty:
                 raise ValueError(f"No data found for symbol {symbol}")
@@ -74,11 +79,6 @@ class DataFetcher:
             print(f"Error fetching historical data for {symbol}: {str(e)}")
             return pd.DataFrame()
         
-    # Add a convenience method for backwards compatibility
-    # def fetch_daily_data(self, symbol: str, period: str = "1mo") -> pd.DataFrame:
-    #     """Backwards compatibility - redirects to fetch_daily_data"""
-    #     return self.fetch_daily_data(symbol, period)
-    
     def fetch_multiple_symbols(self, symbols: List[str], period: str = "1mo") -> Dict[str, pd.DataFrame]:
         """
         Fetch data for multiple symbols
