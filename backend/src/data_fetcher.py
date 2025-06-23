@@ -130,66 +130,6 @@ class DataFetcher:
             print(f"Error fetching info for {symbol}: {str(e)}")
             return {'symbol': symbol, 'name': symbol}
     
-    def prepare_data_for_ml(self, data: pd.DataFrame, look_back: int = 60) -> Tuple[np.ndarray, np.ndarray]:
-        """
-        Prepare data for machine learning by creating sequences
-        
-        Args:
-            data: Stock data DataFrame
-            look_back: Number of time steps to look back
-        
-        Returns:
-            Tuple of (X, y) arrays for training
-        """
-        # Use closing prices for prediction
-        prices = data['Close'].values
-        
-        # Normalize the data
-        from sklearn.preprocessing import MinMaxScaler
-        scaler = MinMaxScaler()
-        prices_scaled = scaler.fit_transform(prices.reshape(-1, 1)).flatten()
-        
-        X, y = [], []
-        
-        for i in range(look_back, len(prices_scaled)):
-            X.append(prices_scaled[i-look_back:i])
-            y.append(prices_scaled[i])
-        
-        return np.array(X), np.array(y), scaler
-    
-    def add_features(self, data: pd.DataFrame) -> pd.DataFrame:
-        """
-        Add technical indicators and features to the data
-        
-        Args:
-            data: Stock data DataFrame
-        
-        Returns:
-            DataFrame with additional features
-        """
-        df = data.copy()
-        
-        # Price-based features
-        df['Returns'] = df['Close'].pct_change()
-        df['LogReturns'] = np.log(df['Close'] / df['Close'].shift(1))
-        df['HL_Ratio'] = (df['High'] - df['Low']) / df['Close']
-        df['OC_Ratio'] = (df['Close'] - df['Open']) / df['Open']
-        
-        # Volume features
-        df['Volume_MA'] = df['Volume'].rolling(window=20).mean()
-        df['Volume_Ratio'] = df['Volume'] / df['Volume_MA']
-        
-        # Volatility
-        df['Volatility'] = df['Returns'].rolling(window=20).std()
-        
-        # Price position in range
-        df['Price_Position'] = (df['Close'] - df['Low']) / (df['High'] - df['Low'])
-        
-        # Gap features
-        df['Gap'] = (df['Open'] - df['Close'].shift(1)) / df['Close'].shift(1)
-        
-        return df.dropna()
-
 # Utility functions
 def validate_symbol(symbol: str) -> bool:
     """
