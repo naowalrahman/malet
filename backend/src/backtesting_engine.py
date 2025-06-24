@@ -207,8 +207,6 @@ class MLTradingStrategy(TradingStrategy):
             final_value = current_capital
             total_return = (final_value - self.initial_capital) / self.initial_capital
 
-            print(trades)
-            
             return {
                 'strategy': 'ML Trading',
                 'initial_capital': self.initial_capital,
@@ -280,8 +278,6 @@ class BacktestEngine:
             'ml_strategy': {**ml_results, **ml_metrics},
             'comparison_metrics': self.compare_strategies(bh_results, ml_results)
         }
-        
-        # print(comparison)
         
         self.results = comparison
         return comparison

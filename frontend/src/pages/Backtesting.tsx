@@ -26,21 +26,24 @@ import {
   AccordionSummary,
   AccordionDetails,
 } from "@mui/material";
-import { PlayArrow, TrendingUp, TrendingDown, ExpandMore } from "@mui/icons-material";
+import { PlayArrow, TrendingUp, TrendingDown, ExpandMore, Info } from "@mui/icons-material";
 import { apiService } from "../services/api";
 import ModernPlot from "../components/ModernPlot";
-import type { Model, BacktestRequest, BacktestResults } from "../services/api";
+import ModelDetailsDialog from "../components/ModelDetailsDialog";
+import type { TrainedModelDetails, BacktestRequest, BacktestResults } from "../services/api";
 
 export default function Backtesting() {
-  const [symbol, setSymbol] = useState("AAPL");
+  const [symbol, setSymbol] = useState("SPY");
   const [selectedModel, setSelectedModel] = useState("");
   const [initialCapital, setInitialCapital] = useState(10000);
-  const [startDate, setStartDate] = useState("2023-01-01");
-  const [endDate, setEndDate] = useState("2024-01-01");
+  const [startDate, setStartDate] = useState("2020-01-01");
+  const [endDate, setEndDate] = useState("2025-01-01");
   const [isRunning, setIsRunning] = useState(false);
   const [results, setResults] = useState<BacktestResults | null>(null);
-  const [models, setModels] = useState<Model[]>([]);
+  const [models, setModels] = useState<TrainedModelDetails[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
+  const [selectedModelForDetails, setSelectedModelForDetails] = useState<TrainedModelDetails | null>(null);
 
   useEffect(() => {
     fetchModels();
@@ -163,7 +166,7 @@ export default function Backtesting() {
 
   function renderConfiguration() {
     return (
-      <Card>
+      <Card sx={{ minHeight: selectedModel ? 350 : 250 }}>
         <CardContent>
           <Typography variant="h6" gutterBottom>
             Backtest Configuration
@@ -192,6 +195,77 @@ export default function Backtesting() {
                 </Select>
               </FormControl>
             </Grid>
+
+            {/* Selected Model Details */}
+            {selectedModel && (
+              <Grid size={{ xs: 12 }}>
+                <Card variant="outlined" sx={{ mt: 2 }}>
+                  <CardContent>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                      <Typography variant="h6">
+                        Selected Model Details
+                      </Typography>
+                      <Button
+                        startIcon={<Info />}
+                        onClick={() => {
+                          const model = models.find(m => m.model_id === selectedModel);
+                          if (model) {
+                            setSelectedModelForDetails(model);
+                            setDetailsDialogOpen(true);
+                          }
+                        }}
+                        size="small"
+                      >
+                        View Full Details
+                      </Button>
+                    </Box>
+                    {(() => {
+                      const model = models.find(m => m.model_id === selectedModel);
+                      if (!model) return null;
+                      
+                      return (
+                        <Grid container spacing={2}>
+                          <Grid size={{ xs: 6, sm: 3 }}>
+                            <Typography variant="body2" color="text.secondary">
+                              Symbol
+                            </Typography>
+                            <Typography variant="body1" fontWeight="bold">
+                              {model.symbol}
+                            </Typography>
+                          </Grid>
+                          <Grid size={{ xs: 6, sm: 3 }}>
+                            <Typography variant="body2" color="text.secondary">
+                              Model Type
+                            </Typography>
+                            <Typography variant="body1" fontWeight="bold">
+                              {model.model_type.toUpperCase()}
+                            </Typography>
+                          </Grid>
+                          <Grid size={{ xs: 6, sm: 3 }}>
+                            <Typography variant="body2" color="text.secondary">
+                              Accuracy
+                            </Typography>
+                            <Chip 
+                              label={formatPercentage(model.accuracy)} 
+                              color="primary" 
+                              size="small"
+                            />
+                          </Grid>
+                          <Grid size={{ xs: 6, sm: 3 }}>
+                            <Typography variant="body2" color="text.secondary">
+                              Created
+                            </Typography>
+                            <Typography variant="body2">
+                              {new Date(model.created_at).toLocaleDateString()}
+                            </Typography>
+                          </Grid>
+                        </Grid>
+                      );
+                    })()}
+                  </CardContent>
+                </Card>
+              </Grid>
+            )}
 
             <Grid size={{ xs: 12, md: 4 }}>
               <TextField
@@ -416,25 +490,45 @@ export default function Backtesting() {
   }
 
   return (
-    <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
-      <Box sx={{ mb: 4 }}>
-        <Typography variant="h4" component="h1" gutterBottom>
-          Backtesting
-        </Typography>
-        <Typography variant="body1" color="text.secondary">
-          Test your ML models against historical data to evaluate performance
-        </Typography>
-      </Box>
+    <Box sx={{ 
+      display: 'flex', 
+      justifyContent: 'center', 
+      minHeight: '100vh', 
+      py: 4,
+      backgroundColor: 'background.default'
+    }}>
+      <Container maxWidth="xl">
+        <Box sx={{ mb: 4, textAlign: 'center' }}>
+          <Typography variant="h3" component="h1" gutterBottom fontWeight={700}>
+            Backtesting
+          </Typography>
+          <Typography variant="body1" color="text.secondary">
+            Test your ML models against historical data to evaluate performance
+          </Typography>
+        </Box>
 
-      {error && (
-        <Alert severity="error" sx={{ mb: 3 }}>
-          {error}
-        </Alert>
-      )}
+        {error && (
+          <Alert severity="error" sx={{ mb: 3 }}>
+            {error}
+          </Alert>
+        )}
 
-      {renderConfiguration()}
-      {renderResults()}
-      {renderPlots()}
-    </Container>
+        <Box sx={{ minWidth: 800 }}>
+          {renderConfiguration()}
+          {renderResults()}
+          {renderPlots()}
+        </Box>
+
+        {/* Model Details Dialog */}
+        <ModelDetailsDialog
+          open={detailsDialogOpen}
+          onClose={() => {
+            setDetailsDialogOpen(false);
+            setSelectedModelForDetails(null);
+          }}
+          modelDetails={selectedModelForDetails}
+        />
+      </Container>
+    </Box>
   );
 }

@@ -16,7 +16,7 @@ import {
   Step,
   StepLabel,
   Alert,
-  LinearProgress,
+  CircularProgress,
   Chip,
   Accordion,
   AccordionSummary,
@@ -31,37 +31,37 @@ import {
   DialogActions,
   Slider,
 } from "@mui/material";
-import { PlayArrow, Stop, Download, Delete, ExpandMore } from "@mui/icons-material";
+import { PlayArrow, Download, Delete, ExpandMore, Info } from "@mui/icons-material";
 import { apiService } from "../services/api";
-import type { Model, TrainingRequest } from "../services/api";
+import type { ModelDetails, TrainedModelDetails, TrainingRequest } from "../services/api";
+import ModelDetailsDialog from "../components/ModelDetailsDialog";
 
 const steps = ["Configure Model", "Training", "Results"];
 
 export default function ModelTraining() {
   const [activeStep, setActiveStep] = useState(0);
-  const [symbol, setSymbol] = useState("AAPL");
+  const [symbol, setSymbol] = useState("SPY");
   const [modelType, setModelType] = useState("lstm");
   const [epochs, setEpochs] = useState(100);
   const [batchSize, setBatchSize] = useState(32);
-  const [learningRate, setLearningRate] = useState(0.001);
-  const [sequenceLength, setSequenceLength] = useState(60);
+  const [learningRate, setLearningRate] = useState(0.004);
+  const [sequenceLength, setSequenceLength] = useState(120);
   const [predictionHorizon] = useState(5);
   const [threshold] = useState(0.02);
-  const [startDate, setStartDate] = useState("2023-01-01");
-  const [endDate, setEndDate] = useState("2024-01-01");
+  const [startDate, setStartDate] = useState("2010-01-01");
+  const [endDate, setEndDate] = useState("2020-01-01");
 
   const [isTraining, setIsTraining] = useState(false);
-  const [trainingProgress, setTrainingProgress] = useState(0);
-  const [trainingLogs, setTrainingLogs] = useState<string[]>([]);
   const [currentModelId, setCurrentModelId] = useState<string | null>(null);
-  const [, setCurrentJobId] = useState<string | null>(null);
   const [trainingResults, setTrainingResults] = useState<any>(null);
-  const [trainedModels, setTrainedModels] = useState<Model[]>([]);
-  const [availableModels, setAvailableModels] = useState<Model[]>([]);
+  const [trainedModels, setTrainedModels] = useState<TrainedModelDetails[]>([]);
+  const [availableModels, setAvailableModels] = useState<ModelDetails[]>([]);
 
   const [error, setError] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [modelToDelete, setModelToDelete] = useState<string | null>(null);
+  const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
+  const [selectedModelForDetails, setSelectedModelForDetails] = useState<TrainedModelDetails | null>(null);
 
   useEffect(() => {
     fetchModels();
@@ -87,8 +87,6 @@ export default function ModelTraining() {
       setError(null);
       setIsTraining(true);
       setActiveStep(1);
-      setTrainingProgress(0);
-      setTrainingLogs([]);
 
       const request: TrainingRequest = {
         symbol,
@@ -103,49 +101,42 @@ export default function ModelTraining() {
         end_date: endDate,
       };
 
+      // Start training and get job ID
       const response = await apiService.trainModel(request);
-      setCurrentJobId(response.job_id);
-
-      // Poll for training status
-      pollTrainingStatus(response.job_id);
+      const jobId = response.job_id;
+      
+      // Wait for training completion
+      let completed = false;
+      while (!completed) {
+        await new Promise(resolve => setTimeout(resolve, 3000)); // Wait 3 seconds
+        try {
+          const status = await apiService.getTrainingStatus(jobId);
+          if (status.status === "completed") {
+            completed = true;
+            setIsTraining(false);
+            setActiveStep(2);
+            setTrainingResults(status.results || status.result);
+            if (status.result?.model_id) {
+              setCurrentModelId(status.result.model_id);
+            }
+            fetchModels(); // Refresh models list
+          } else if (status.status === "failed") {
+            completed = true;
+            throw new Error(status.error || "Training failed");
+          }
+        } catch (statusError) {
+          completed = true;
+          throw statusError;
+        }
+      }
     } catch (err) {
-      setError("Failed to start training");
+      setError("Failed to train model");
       setIsTraining(false);
+      setActiveStep(0);
     }
   }
 
-  const pollTrainingStatus = async (modelId: string) => {
-    const pollInterval = setInterval(async () => {
-      try {
-        const status = await apiService.getTrainingStatus(modelId);
 
-        setTrainingProgress(status.progress || 0);
-
-        if (status.status === "completed") {
-          clearInterval(pollInterval);
-          setIsTraining(false);
-          setActiveStep(2);
-          setTrainingResults(status.results || status.result);
-          if (status.result?.model_id) {
-            setCurrentModelId(status.result.model_id);
-          }
-          fetchModels(); // Refresh models list
-        } else if (status.status === "failed") {
-          clearInterval(pollInterval);
-          setIsTraining(false);
-          setError(status.error || "Training failed");
-        }
-
-        // Add status updates to logs
-        const timestamp = new Date().toLocaleTimeString();
-        setTrainingLogs((prev) => [...prev, `${timestamp}: ${status.status} (${status.progress}%)`]);
-      } catch (err) {
-        clearInterval(pollInterval);
-        setIsTraining(false);
-        setError("Failed to get training status");
-      }
-    }, 2000);
-  };
 
   const handleDeleteModel = async (modelId: string) => {
     try {
@@ -281,11 +272,11 @@ export default function ModelTraining() {
                         value={sequenceLength}
                         onChange={(_, value) => setSequenceLength(value as number)}
                         min={10}
-                        max={120}
+                        max={240}
                         step={5}
-                        marks={Array.from({ length: 120 / 10 }, (_, i) => ({
-                          value: 20 + (i * 10),
-                          label: String(20 + (i * 10)),
+                        marks={Array.from({ length: 240 / 20 }, (_, i) => ({
+                          value: 20 + (i * 20),
+                          label: String(20 + (i * 20))
                         }))}
                       />
                     </Grid>
@@ -316,41 +307,25 @@ export default function ModelTraining() {
             Training in Progress
           </Typography>
 
-          <Box sx={{ mb: 3 }}>
-            <Typography variant="body2" color="text.secondary" gutterBottom>
+          <Box sx={{ 
+            display: 'flex', 
+            flexDirection: 'column', 
+            alignItems: 'center', 
+            py: 6,
+            minHeight: 300
+          }}>
+            <CircularProgress size={60} sx={{ mb: 3 }} />
+            <Typography variant="body1" color="text.secondary" gutterBottom>
               Training Model: {modelType.toUpperCase()} for {symbol}
             </Typography>
-            <LinearProgress variant="determinate" value={trainingProgress} sx={{ height: 8, borderRadius: 4 }} />
-            <Typography variant="body2" sx={{ mt: 1 }}>
-              {trainingProgress}% Complete
+            <Typography variant="body2" color="text.secondary">
+              This may take several minutes...
             </Typography>
           </Box>
 
-          <Card variant="outlined" sx={{ mb: 3, maxHeight: 300, overflow: "auto" }}>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                Training Logs
-              </Typography>
-              {trainingLogs.map((log, index) => (
-                <Typography key={index} variant="body2" sx={{ fontFamily: "monospace" }}>
-                  {log}
-                </Typography>
-              ))}
-            </CardContent>
-          </Card>
-
-          <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+          <Box sx={{ display: "flex", justifyContent: "center" }}>
             <Button variant="outlined" onClick={() => setActiveStep(0)} disabled={isTraining}>
               Back to Configuration
-            </Button>
-            <Button
-              variant="contained"
-              color="error"
-              onClick={() => setIsTraining(false)}
-              disabled={!isTraining}
-              startIcon={<Stop />}
-            >
-              Stop Training
             </Button>
           </Box>
         </CardContent>
@@ -460,82 +435,124 @@ export default function ModelTraining() {
   }
 
   return (
-    <Container maxWidth="xl" sx={{ py: 4 }}>
-      <Typography variant="h3" sx={{ mb: 4, fontWeight: 700 }}>
-        Model Training
-      </Typography>
+    <Box sx={{ 
+      display: 'flex', 
+      justifyContent: 'center', 
+      minHeight: '100vh', 
+      py: 4,
+      backgroundColor: 'background.default'
+    }}>
+      <Container maxWidth="xl">
+        <Typography variant="h3" sx={{ mb: 4, fontWeight: 700, textAlign: 'center' }}>
+          Model Training
+        </Typography>
 
-      {error && (
-        <Alert severity="error" sx={{ mb: 3 }}>
-          {error}
-        </Alert>
-      )}
+        {error && (
+          <Alert severity="error" sx={{ mb: 3 }}>
+            {error}
+          </Alert>
+        )}
 
-      <Grid container spacing={4}>
-        <Grid size={{ xs: 12, lg: 8 }}>
-          <Box sx={{ mb: 4 }}>
-            <Stepper activeStep={activeStep}>
-              {steps.map((label) => (
-                <Step key={label}>
-                  <StepLabel>{label}</StepLabel>
-                </Step>
-              ))}
-            </Stepper>
-          </Box>
-
-          {activeStep === 0 && renderConfigurationStep()}
-          {activeStep === 1 && renderTrainingStep()}
-          {activeStep === 2 && renderResultsStep()}
-        </Grid>
-
-        <Grid size={{ xs: 12, lg: 4 }}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                Trained Models
-              </Typography>
-
-              <List>
-                {trainedModels.map((model) => (
-                  <ListItem
-                    key={model.model_id}
-                    secondaryAction={
-                      <IconButton
-                        edge="end"
-                        onClick={() => {
-                          setModelToDelete(model.model_id);
-                          setDeleteDialogOpen(true);
-                        }}
-                      >
-                        <Delete />
-                      </IconButton>
-                    }
-                  >
-                    <ListItemText
-                      primary={`${model.symbol} - ${model.model_type.toUpperCase()}`}
-                      secondary={`Accuracy: ${model.accuracy ? (model.accuracy * 100).toFixed(1) : "N/A"}%`}
-                    />
-                  </ListItem>
+        <Grid container spacing={4}>
+          <Grid size={{ xs: 12, lg: 8 }}>
+            <Box sx={{ mb: 4, minWidth: 600 }}>
+              <Stepper activeStep={activeStep}>
+                {steps.map((label) => (
+                  <Step key={label}>
+                    <StepLabel>{label}</StepLabel>
+                  </Step>
                 ))}
-              </List>
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
+              </Stepper>
+            </Box>
 
-      {/* Delete Confirmation Dialog */}
-      <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
-        <DialogTitle>Delete Model</DialogTitle>
-        <DialogContent>
-          <Typography>Are you sure you want to delete this model? This action cannot be undone.</Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
-          <Button onClick={() => modelToDelete && handleDeleteModel(modelToDelete)} color="error">
-            Delete
-          </Button>
-        </DialogActions>
-      </Dialog>
-    </Container>
+            <Box sx={{ minWidth: 600 }}>
+              {activeStep === 0 && renderConfigurationStep()}
+              {activeStep === 1 && renderTrainingStep()}
+              {activeStep === 2 && renderResultsStep()}
+            </Box>
+          </Grid>
+
+          <Grid size={{ xs: 12, lg: 4 }}>
+            <Card sx={{ minWidth: 350 }}>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  Trained Models
+                </Typography>
+
+                <List>
+                  {trainedModels.map((model) => (
+                    <ListItem
+                      key={model.model_id}
+                      secondaryAction={
+                        <Box sx={{ display: 'flex', gap: 1 }}>
+                          <IconButton
+                            onClick={() => {
+                              setSelectedModelForDetails(model);
+                              setDetailsDialogOpen(true);
+                            }}
+                            title="View Details"
+                          >
+                            <Info />
+                          </IconButton>
+                          <IconButton
+                            edge="end"
+                            onClick={() => {
+                              setModelToDelete(model.model_id);
+                              setDeleteDialogOpen(true);
+                            }}
+                            title="Delete Model"
+                          >
+                            <Delete />
+                          </IconButton>
+                        </Box>
+                      }
+                    >
+                      <ListItemText
+                        primary={`${model.symbol} - ${model.model_type.toUpperCase()}`}
+                        secondary={`Accuracy: ${model.accuracy ? (model.accuracy * 100).toFixed(1) : "N/A"}%`}
+                        sx={{ 
+                          cursor: 'pointer',
+                          '&:hover': {
+                            backgroundColor: 'action.hover'
+                          }
+                        }}
+                        onClick={() => {
+                          setSelectedModelForDetails(model);
+                          setDetailsDialogOpen(true);
+                        }}
+                      />
+                    </ListItem>
+                  ))}
+                </List>
+              </CardContent>
+            </Card>
+          </Grid>
+        </Grid>
+
+        {/* Model Details Dialog */}
+        <ModelDetailsDialog
+          open={detailsDialogOpen}
+          onClose={() => {
+            setDetailsDialogOpen(false);
+            setSelectedModelForDetails(null);
+          }}
+          modelDetails={selectedModelForDetails}
+        />
+
+        {/* Delete Confirmation Dialog */}
+        <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
+          <DialogTitle>Delete Model</DialogTitle>
+          <DialogContent>
+            <Typography>Are you sure you want to delete this model? This action cannot be undone.</Typography>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
+            <Button onClick={() => modelToDelete && handleDeleteModel(modelToDelete)} color="error">
+              Delete
+            </Button>
+          </DialogActions>
+        </Dialog>
+      </Container>
+    </Box>
   );
 }

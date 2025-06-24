@@ -106,7 +106,7 @@ function App() {
       <Router>
         <Box sx={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
           <Navbar />
-          <Box component="main" sx={{ flexGrow: 1, bgcolor: "background.default" }}>
+          <Box component="main" sx={{ flexGrow: 1 }}>
             <Routes>
               <Route path="/" element={<Dashboard />} />
               <Route path="/data" element={<DataExplorer />} />

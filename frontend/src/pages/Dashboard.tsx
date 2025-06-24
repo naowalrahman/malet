@@ -26,7 +26,7 @@ import {
 import { useTheme } from "@mui/material/styles";
 import { useNavigate } from "react-router-dom";
 import { apiService } from "../services/api";
-import type { Model, MarketAnalysis } from "../services/api";
+import type { ModelDetails, MarketAnalysis } from "../services/api";
 
 interface MetricCardProps {
   title: string;
@@ -106,7 +106,7 @@ const MetricCard: React.FC<MetricCardProps> = ({ title, value, change, icon, col
 const Dashboard: React.FC = () => {
   const theme = useTheme();
   const navigate = useNavigate();
-  const [models, setModels] = useState<Model[]>([]);
+  const [models, setModels] = useState<ModelDetails[]>([]);
   const [marketAnalysis, setMarketAnalysis] = useState<MarketAnalysis | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -167,27 +167,20 @@ const Dashboard: React.FC = () => {
   return (
     <Container maxWidth="xl" sx={{ py: 4 }}>
       {/* Header */}
-      <Box
-        sx={{
-          mb: 4,
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-        }}
-      >
-        <Box>
-          <Typography variant="h3" sx={{ fontWeight: 700, mb: 1 }}>
-            Trading Dashboard
-          </Typography>
-          <Typography variant="subtitle1" sx={{ color: "text.secondary" }}>
-            AI-powered trading insights and analytics
-          </Typography>
-        </Box>
+      <Box sx={{ mb: 4, textAlign: 'center' }}>
+        <Typography variant="h3" component="h1" gutterBottom fontWeight={700}>
+          Trading Dashboard
+        </Typography>
+        <Typography variant="body1" color="text.secondary">
+          AI-powered trading insights and analytics.
+        </Typography>
+        <Box sx={{ mt: 2 }}>
         <Tooltip title="Refresh Data">
           <IconButton onClick={fetchData} sx={{ bgcolor: "primary.main", color: "white" }}>
-            <Refresh />
-          </IconButton>
-        </Tooltip>
+              <Refresh />
+            </IconButton>
+          </Tooltip>
+        </Box>
       </Box>
 
       {error && (

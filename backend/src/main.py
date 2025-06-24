@@ -224,7 +224,17 @@ async def train_model_background(job_id: str, request: TrainingRequest):
             "symbol": request.symbol,
             "model_type": request.model_type,
             "training_result": training_result,
-            "created_at": datetime.now().isoformat()
+            "created_at": datetime.now().isoformat(),
+            "training_params": {
+                "sequence_length": request.sequence_length,
+                "epochs": request.epochs,
+                "batch_size": request.batch_size,
+                "learning_rate": request.learning_rate,
+                "prediction_horizon": request.prediction_horizon,
+                "threshold": request.threshold,
+                "start_date": request.start_date,
+                "end_date": request.end_date
+            }
         }
         
     except Exception as e:
@@ -259,18 +269,23 @@ async def get_training_status(job_id: str):
 
 @app.get("/trained-models")
 async def list_trained_models():
-    """List all trained models"""
+    """List all trained models with detailed information"""
     model_list = []
     for model_id, model_info in models.items():
+        training_result = model_info["training_result"]
         model_list.append({
             "model_id": model_id,
             "symbol": model_info["symbol"],
             "model_type": model_info["model_type"],
             "created_at": model_info["created_at"],
-            "accuracy": model_info["training_result"]["final_metrics"].get("accuracy", 0)
+            "accuracy": training_result["final_metrics"].get("accuracy", 0),
+            "training_params": model_info.get("training_params", {}),
+            "training_metrics": training_result["final_metrics"],
+            "training_history": training_result.get("training_history", {})
         })
     
     return {"models": model_list}
+
 
 @app.delete("/trained-models/{model_id}")
 async def delete_model(model_id: str):

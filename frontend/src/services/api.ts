@@ -49,12 +49,40 @@ export interface TrainingJob {
   error?: string;
 }
 
-export interface Model {
+export interface ModelDetails {
   model_id: string;
   symbol: string;
   model_type: string;
   created_at: string;
   accuracy: number;
+}
+
+export interface TrainedModelDetails {
+  model_id: string;
+  symbol: string;
+  model_type: string;
+  created_at: string;
+  accuracy: number;
+  training_params: {
+    sequence_length: number;
+    epochs: number;
+    batch_size: number;
+    learning_rate: number;
+    prediction_horizon: number;
+    threshold: number;
+    start_date?: string;
+    end_date?: string;
+  };
+  training_metrics: {
+    accuracy: number;
+    precision: number;
+    recall: number;
+    f1_score: number;
+  };
+  training_history: {
+    train_losses?: number[];
+    val_losses?: number[];
+  };
 }
 
 export interface Prediction {
@@ -151,12 +179,12 @@ class ApiService {
     return response.data;
   }
 
-  async getTrainedModels(): Promise<{ models: Model[] }> {
+  async getTrainedModels(): Promise<{ models: TrainedModelDetails[] }> {
     const response = await axios.get(`${this.baseURL}/trained-models`);
     return response.data;
   }
 
-  async getAvailableModels(): Promise<{ models: Model[] }> {
+  async getAvailableModels(): Promise<{ models: ModelDetails[] }> {
     const response = await axios.get(`${this.baseURL}/available-models`);
     return response.data;
   }
