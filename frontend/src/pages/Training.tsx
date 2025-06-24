@@ -56,6 +56,7 @@ function ModelTraining() {
   const [trainingResults, setTrainingResults] = useState<any>(null);
   const [trainedModels, setTrainedModels] = useState<TrainedModelDetails[]>([]);
   const [availableModels, setAvailableModels] = useState<ModelDetails[]>([]);
+  const [pollInterval, setPollInterval] = useState<NodeJS.Timeout | null>(null);
 
   const [error, setError] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -66,6 +67,15 @@ function ModelTraining() {
   useEffect(() => {
     fetchModels();
   }, []);
+
+  // cleanup
+  useEffect(() => {
+    return () => {
+      if (pollInterval) {
+        clearInterval(pollInterval);
+      }
+    };
+  }, [pollInterval]);
 
   async function fetchModels() {
     try {
@@ -105,14 +115,13 @@ function ModelTraining() {
       const response = await apiService.trainModel(request);
       const jobId = response.job_id;
 
-      // Wait for training completion
-      let completed = false;
-      while (!completed) {
-        await new Promise((resolve) => setTimeout(resolve, 3000)); // Wait 3 seconds
+      // Poll for training completion every 2 seconds
+      const interval = setInterval(async () => {
         try {
           const status = await apiService.getTrainingStatus(jobId);
           if (status.status === "completed") {
-            completed = true;
+            clearInterval(interval);
+            setPollInterval(null);
             setIsTraining(false);
             setActiveStep(2);
             setTrainingResults(status.results || status.result);
@@ -121,18 +130,42 @@ function ModelTraining() {
             }
             fetchModels(); // Refresh models list
           } else if (status.status === "failed") {
-            completed = true;
+            clearInterval(interval);
+            setPollInterval(null);
             throw new Error(status.error || "Training failed");
           }
-        } catch (statusError) {
-          completed = true;
+          // If status is still "running" or "pending", continue polling
+        } catch (statusError: any) {
+          // Handle network errors gracefully - don't stop polling immediately
+          // Only stop if it's a persistent error (not timeout/network issues)
+
+          // If it's an axios timeout or network error, continue polling
+          if (
+            statusError.code === "ECONNABORTED" ||
+            statusError.message?.includes("timeout") ||
+            statusError.message?.includes("Network Error")
+          ) {
+            console.warn("Error checking training status... continuing polling because error was timeout or network error");
+            return; // Continue polling
+          }
+
+          // For other errors, stop polling
+          clearInterval(interval);
+          setPollInterval(null);
+          console.warn(`Error checking training status: ${statusError}`);
           throw statusError;
         }
-      }
+      }, 2000); // Poll every 2 seconds
+
+      setPollInterval(interval);
     } catch (err) {
-      setError("Failed to train model");
+      setError(`Failed to train model: ${err}`);
       setIsTraining(false);
       setActiveStep(0);
+      if (pollInterval) {
+        clearInterval(pollInterval);
+        setPollInterval(null);
+      }
     }
   }
 
@@ -145,6 +178,16 @@ function ModelTraining() {
     } catch (err) {
       setError("Failed to delete model");
     }
+  };
+
+  const handleCancelTraining = () => {
+    if (pollInterval) {
+      clearInterval(pollInterval);
+      setPollInterval(null);
+    }
+    setIsTraining(false);
+    setActiveStep(0);
+    setError("Training cancelled by user");
   };
 
   function renderConfigurationStep() {
@@ -323,9 +366,9 @@ function ModelTraining() {
             </Typography>
           </Box>
 
-          <Box sx={{ display: "flex", justifyContent: "center" }}>
-            <Button variant="outlined" onClick={() => setActiveStep(0)} disabled={isTraining}>
-              Back to Configuration
+          <Box sx={{ display: "flex", justifyContent: "center", gap: 2 }}>
+            <Button variant="outlined" onClick={handleCancelTraining} disabled={!isTraining}>
+              Cancel Training
             </Button>
           </Box>
         </CardContent>
