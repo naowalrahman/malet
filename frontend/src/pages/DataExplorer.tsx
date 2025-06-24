@@ -1,6 +1,6 @@
 import { Container, Typography, Box, Card, CardContent, Alert } from "@mui/material";
 
-export default function DataExplorer() {
+function DataExplorer() {
   return (
     <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
       <Box sx={{ mb: 4 }}>
@@ -29,3 +29,5 @@ export default function DataExplorer() {
     </Container>
   );
 }
+
+export default DataExplorer;

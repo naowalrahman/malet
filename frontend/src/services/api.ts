@@ -116,6 +116,7 @@ export interface BacktestResults {
 }
 
 export interface MarketAnalysis {
+  date: Date;
   symbol: string;
   current_price: number;
   price_change: number;
@@ -222,8 +223,10 @@ class ApiService {
   }
 
   // Analysis endpoints
-  async getMarketAnalysis(symbol: string): Promise<MarketAnalysis> {
-    const response = await axios.get(`${this.baseURL}/market-analysis/${symbol}`);
+  async getMarketAnalysis(symbols: string[]): Promise<MarketAnalysis[]> {
+    const response = await axios.get(`${this.baseURL}/market-analysis`, { 
+      params: { symbols: symbols.join(',') } 
+    });
     return response.data;
   }
 

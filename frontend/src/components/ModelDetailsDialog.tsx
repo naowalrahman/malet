@@ -20,7 +20,7 @@ interface ModelDetailsDialogProps {
   modelDetails: TrainedModelDetails | null;
 }
 
-export default function ModelDetailsDialog({ open, onClose, modelDetails }: ModelDetailsDialogProps) {
+function ModelDetailsDialog({ open, onClose, modelDetails }: ModelDetailsDialogProps) {
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("en-US", {
       year: "numeric",
@@ -286,3 +286,5 @@ export default function ModelDetailsDialog({ open, onClose, modelDetails }: Mode
     </Dialog>
   );
 }
+
+export default ModelDetailsDialog;

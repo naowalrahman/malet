@@ -12,6 +12,8 @@ import {
   IconButton,
   Tooltip,
   Grid,
+  ToggleButton,
+  ToggleButtonGroup,
 } from "@mui/material";
 import {
   TrendingUp,
@@ -103,13 +105,16 @@ const MetricCard: React.FC<MetricCardProps> = ({ title, value, change, icon, col
   );
 };
 
-const Dashboard: React.FC = () => {
+function Dashboard() {
   const theme = useTheme();
   const navigate = useNavigate();
   const [models, setModels] = useState<ModelDetails[]>([]);
-  const [marketAnalysis, setMarketAnalysis] = useState<MarketAnalysis | null>(null);
+  const [marketAnalysis, setMarketAnalysis] = useState<MarketAnalysis[]>([]);
+  const [selectedSymbol, setSelectedSymbol] = useState<string>("SPY");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const watchedSymbols = ["SPY", "DIA", "QQQ"];
 
   const fetchData = async () => {
     try {
@@ -120,9 +125,9 @@ const Dashboard: React.FC = () => {
       const modelsResponse = await apiService.getTrainedModels();
       setModels(modelsResponse.models);
 
-      // Fetch market analysis for SPY (S&P 500)
+      // Fetch market analysis for SPY, DIA, and QQQ
       try {
-        const analysisResponse = await apiService.getMarketAnalysis("SPY");
+        const analysisResponse = await apiService.getMarketAnalysis(watchedSymbols);
         setMarketAnalysis(analysisResponse);
       } catch (analysisError) {
         console.warn("Could not fetch market analysis:", analysisError);
@@ -141,6 +146,9 @@ const Dashboard: React.FC = () => {
   const activeModels = models.filter((model) => model.accuracy > 0.5);
   const avgAccuracy = models.length > 0 ? models.reduce((sum, model) => sum + model.accuracy, 0) / models.length : 0;
 
+  // Get the selected symbol's market analysis
+  const selectedAnalysis = marketAnalysis.find((analysis) => analysis.symbol === selectedSymbol);
+
   const getSignalColor = (signal: number) => {
     if (signal > 0) return theme.palette.success.main;
     if (signal < 0) return theme.palette.error.main;
@@ -151,6 +159,12 @@ const Dashboard: React.FC = () => {
     if (signal > 0) return "BULLISH";
     if (signal < 0) return "BEARISH";
     return "NEUTRAL";
+  };
+
+  const handleSymbolChange = (_event: React.MouseEvent<HTMLElement>, newSymbol: string | null) => {
+    if (newSymbol !== null) {
+      setSelectedSymbol(newSymbol);
+    }
   };
 
   if (loading) {
@@ -196,25 +210,22 @@ const Dashboard: React.FC = () => {
             title="Active Models"
             value={activeModels.length}
             icon={<Psychology sx={{ fontSize: 32 }} />}
-            color="primary"
-          />
+            color="primary" />
         </Grid>
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <MetricCard
             title="Avg Accuracy"
             value={`${(avgAccuracy * 100).toFixed(1)}%`}
             icon={<Assessment sx={{ fontSize: 32 }} />}
-            color="success"
-          />
+            color="success" />
         </Grid>
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <MetricCard
-            title="Market Price"
-            value={marketAnalysis ? `$${marketAnalysis.current_price.toFixed(2)}` : "$0.00"}
-            change={marketAnalysis ? marketAnalysis.price_change_pct : undefined}
+            title={`${selectedSymbol} Price`}
+            value={selectedAnalysis ? `$${selectedAnalysis.current_price.toFixed(2)}` : "$0.00"}
+            change={selectedAnalysis ? selectedAnalysis.price_change_pct : undefined}
             icon={<Timeline sx={{ fontSize: 32 }} />}
-            color="info"
-          />
+            color="info" />
         </Grid>
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <MetricCard
@@ -222,8 +233,7 @@ const Dashboard: React.FC = () => {
             value="$10,000"
             change={2.34}
             icon={<AccountBalance sx={{ fontSize: 32 }} />}
-            color="secondary"
-          />
+            color="secondary" />
         </Grid>
       </Grid>
 
@@ -238,129 +248,166 @@ const Dashboard: React.FC = () => {
                   justifyContent: "space-between",
                   alignItems: "center",
                   mb: 3,
+                  flexWrap: "wrap",
+                  gap: 2,
                 }}
               >
-                <Typography variant="h5" sx={{ fontWeight: 600 }}>
-                  Market Overview
-                </Typography>
-                {marketAnalysis && (
-                  <Chip
-                    label={getSignalText(marketAnalysis.combined_signal)}
+                <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                  <Typography variant="h5" sx={{ fontWeight: 600 }}>
+                    Market Overview
+                  </Typography>
+                  <ToggleButtonGroup
+                    value={selectedSymbol}
+                    exclusive
+                    onChange={handleSymbolChange}
+                    size="small"
                     sx={{
-                      bgcolor: `${getSignalColor(marketAnalysis.combined_signal)}20`,
-                      color: getSignalColor(marketAnalysis.combined_signal),
-                      fontWeight: 600,
+                      "& .MuiToggleButton-root": {
+                        px: 2,
+                        py: 0.5,
+                        fontSize: "0.875rem",
+                        fontWeight: 600,
+                      },
                     }}
-                  />
+                  >
+                    {watchedSymbols.map((symbol) => (
+                      <ToggleButton key={symbol} value={symbol}>
+                        {symbol}
+                      </ToggleButton>
+                    ))}
+                  </ToggleButtonGroup>
+                </Box>
+                {selectedAnalysis && (
+                  <Chip
+                    label={getSignalText(selectedAnalysis.combined_signal)}
+                    sx={{
+                      bgcolor: `${getSignalColor(selectedAnalysis.combined_signal)}20`,
+                      color: getSignalColor(selectedAnalysis.combined_signal),
+                      fontWeight: 600,
+                    }} />
                 )}
               </Box>
 
-              {marketAnalysis ? (
-                <Grid container spacing={3}>
-                  <Grid size={{ xs: 12, md: 6 }}>
-                    <Box sx={{ mb: 2 }}>
-                      <Typography variant="subtitle2" sx={{ color: "text.secondary", mb: 1 }}>
-                        RSI (Relative Strength Index)
-                      </Typography>
-                      <Box sx={{ display: "flex", alignItems: "center" }}>
-                        <Box sx={{ width: "100%", mr: 1 }}>
-                          <LinearProgress
-                            variant="determinate"
-                            value={marketAnalysis.rsi}
-                            sx={{
-                              height: 8,
-                              borderRadius: 4,
-                              bgcolor: "rgba(255, 255, 255, 0.1)",
-                              "& .MuiLinearProgress-bar": {
-                                bgcolor:
-                                  marketAnalysis.rsi > 70
+              {selectedAnalysis ? (
+                <>
+                  <Typography
+                    variant="subtitle1"
+                    sx={{
+                      mb: 2,
+                      color: "text.secondary",
+                      fontWeight: 500,
+                    }}
+                  >
+                    Analysis for {selectedSymbol} -{" "}
+                    {{
+                      SPY: "S&P 500 ETF",
+                      DIA: "Dow Jones ETF",
+                      QQQ: "NASDAQ ETF",
+                    }[selectedAnalysis.symbol]}
+                  </Typography>
+                  <Grid container spacing={3}>
+                    <Grid size={{ xs: 12, md: 6 }}>
+                      <Box sx={{ mb: 2 }}>
+                        <Typography variant="subtitle2" sx={{ color: "text.secondary", mb: 1 }}>
+                          RSI (Relative Strength Index)
+                        </Typography>
+                        <Box sx={{ display: "flex", alignItems: "center" }}>
+                          <Box sx={{ width: "100%", mr: 1 }}>
+                            <LinearProgress
+                              variant="determinate"
+                              value={selectedAnalysis.rsi}
+                              sx={{
+                                height: 8,
+                                borderRadius: 4,
+                                bgcolor: "rgba(255, 255, 255, 0.1)",
+                                "& .MuiLinearProgress-bar": {
+                                  bgcolor: selectedAnalysis.rsi > 70
                                     ? theme.palette.error.main
-                                    : marketAnalysis.rsi < 30
+                                    : selectedAnalysis.rsi < 30
                                       ? theme.palette.success.main
                                       : theme.palette.warning.main,
-                              },
-                            }}
-                          />
+                                },
+                              }} />
+                          </Box>
+                          <Typography variant="body2" sx={{ minWidth: 35, fontWeight: 600 }}>
+                            {selectedAnalysis.rsi.toFixed(0)}
+                          </Typography>
                         </Box>
-                        <Typography variant="body2" sx={{ minWidth: 35, fontWeight: 600 }}>
-                          {marketAnalysis.rsi.toFixed(0)}
+                      </Box>
+
+                      <Box sx={{ mb: 2 }}>
+                        <Typography variant="subtitle2" sx={{ color: "text.secondary", mb: 1 }}>
+                          Bollinger Position
+                        </Typography>
+                        <Box sx={{ display: "flex", alignItems: "center" }}>
+                          <Box sx={{ width: "100%", mr: 1 }}>
+                            <LinearProgress
+                              variant="determinate"
+                              value={selectedAnalysis.bollinger_position * 100}
+                              sx={{
+                                height: 8,
+                                borderRadius: 4,
+                                bgcolor: "rgba(255, 255, 255, 0.1)",
+                                "& .MuiLinearProgress-bar": {
+                                  bgcolor: theme.palette.info.main,
+                                },
+                              }} />
+                          </Box>
+                          <Typography variant="body2" sx={{ minWidth: 35, fontWeight: 600 }}>
+                            {(selectedAnalysis.bollinger_position * 100).toFixed(0)}%
+                          </Typography>
+                        </Box>
+                      </Box>
+
+                      <Box>
+                        <Typography variant="subtitle2" sx={{ color: "text.secondary", mb: 1 }}>
+                          Volatility
+                        </Typography>
+                        <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                          {(selectedAnalysis.volatility * 100).toFixed(2)}%
                         </Typography>
                       </Box>
-                    </Box>
+                    </Grid>
 
-                    <Box sx={{ mb: 2 }}>
-                      <Typography variant="subtitle2" sx={{ color: "text.secondary", mb: 1 }}>
-                        Bollinger Position
-                      </Typography>
-                      <Box sx={{ display: "flex", alignItems: "center" }}>
-                        <Box sx={{ width: "100%", mr: 1 }}>
-                          <LinearProgress
-                            variant="determinate"
-                            value={marketAnalysis.bollinger_position * 100}
+                    <Grid size={{ xs: 12, md: 6 }}>
+                      <Box sx={{ mb: 2 }}>
+                        <Typography variant="subtitle2" sx={{ color: "text.secondary", mb: 1 }}>
+                          Support Levels
+                        </Typography>
+                        {selectedAnalysis.support_levels.map((level, index) => (
+                          <Typography
+                            key={index}
+                            variant="body2"
                             sx={{
-                              height: 8,
-                              borderRadius: 4,
-                              bgcolor: "rgba(255, 255, 255, 0.1)",
-                              "& .MuiLinearProgress-bar": {
-                                bgcolor: theme.palette.info.main,
-                              },
+                              fontWeight: 600,
+                              color: theme.palette.success.main,
                             }}
-                          />
-                        </Box>
-                        <Typography variant="body2" sx={{ minWidth: 35, fontWeight: 600 }}>
-                          {(marketAnalysis.bollinger_position * 100).toFixed(0)}%
-                        </Typography>
+                          >
+                            S{index + 1}: ${level.toFixed(2)}
+                          </Typography>
+                        ))}
                       </Box>
-                    </Box>
 
-                    <Box>
-                      <Typography variant="subtitle2" sx={{ color: "text.secondary", mb: 1 }}>
-                        Volatility
-                      </Typography>
-                      <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                        {(marketAnalysis.volatility * 100).toFixed(2)}%
-                      </Typography>
-                    </Box>
-                  </Grid>
-
-                  <Grid size={{ xs: 12, md: 6 }}>
-                    <Box sx={{ mb: 2 }}>
-                      <Typography variant="subtitle2" sx={{ color: "text.secondary", mb: 1 }}>
-                        Support Levels
-                      </Typography>
-                      {marketAnalysis.support_levels.map((level, index) => (
-                        <Typography
-                          key={index}
-                          variant="body2"
-                          sx={{
-                            fontWeight: 600,
-                            color: theme.palette.success.main,
-                          }}
-                        >
-                          S{index + 1}: ${level.toFixed(2)}
+                      <Box>
+                        <Typography variant="subtitle2" sx={{ color: "text.secondary", mb: 1 }}>
+                          Resistance Levels
                         </Typography>
-                      ))}
-                    </Box>
-
-                    <Box>
-                      <Typography variant="subtitle2" sx={{ color: "text.secondary", mb: 1 }}>
-                        Resistance Levels
-                      </Typography>
-                      {marketAnalysis.resistance_levels.map((level, index) => (
-                        <Typography
-                          key={index}
-                          variant="body2"
-                          sx={{
-                            fontWeight: 600,
-                            color: theme.palette.error.main,
-                          }}
-                        >
-                          R{index + 1}: ${level.toFixed(2)}
-                        </Typography>
-                      ))}
-                    </Box>
+                        {selectedAnalysis.resistance_levels.map((level, index) => (
+                          <Typography
+                            key={index}
+                            variant="body2"
+                            sx={{
+                              fontWeight: 600,
+                              color: theme.palette.error.main,
+                            }}
+                          >
+                            R{index + 1}: ${level.toFixed(2)}
+                          </Typography>
+                        ))}
+                      </Box>
+                    </Grid>
                   </Grid>
-                </Grid>
+                </>
               ) : (
                 <Box sx={{ textAlign: "center", py: 4 }}>
                   <Typography variant="body1" sx={{ color: "text.secondary" }}>
@@ -468,6 +515,6 @@ const Dashboard: React.FC = () => {
       </Grid>
     </Container>
   );
-};
+}
 
 export default Dashboard;

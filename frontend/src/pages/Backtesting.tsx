@@ -32,7 +32,7 @@ import ModernPlot from "../components/ModernPlot";
 import ModelDetailsDialog from "../components/ModelDetailsDialog";
 import type { TrainedModelDetails, BacktestRequest, BacktestResults } from "../services/api";
 
-export default function Backtesting() {
+function Backtesting() {
   const [symbol, setSymbol] = useState("SPY");
   const [selectedModel, setSelectedModel] = useState("");
   const [initialCapital, setInitialCapital] = useState(10000);
@@ -528,3 +528,5 @@ export default function Backtesting() {
     </Box>
   );
 }
+
+export default Backtesting;

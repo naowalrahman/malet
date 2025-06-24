@@ -38,7 +38,7 @@ import ModelDetailsDialog from "../components/ModelDetailsDialog";
 
 const steps = ["Configure Model", "Training", "Results"];
 
-export default function ModelTraining() {
+function ModelTraining() {
   const [activeStep, setActiveStep] = useState(0);
   const [symbol, setSymbol] = useState("SPY");
   const [modelType, setModelType] = useState("lstm");
@@ -558,3 +558,5 @@ export default function ModelTraining() {
     </Box>
   );
 }
+
+export default ModelTraining;

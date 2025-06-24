@@ -1,7 +1,6 @@
-import React from "react";
 import { Container, Typography, Box, Card, CardContent, Alert } from "@mui/material";
 
-const LiveTrading: React.FC = () => {
+function LiveTrading() {
   return (
     <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
       <Box sx={{ mb: 4 }}>
@@ -33,6 +32,6 @@ const LiveTrading: React.FC = () => {
       </Card>
     </Container>
   );
-};
+}
 
 export default LiveTrading;

@@ -4,7 +4,7 @@ from pydantic import BaseModel
 from typing import Optional
 import uvicorn
 import uuid
-from datetime import datetime
+from datetime import datetime, timedelta
 import logging
 import sys
 import os
@@ -35,6 +35,7 @@ app.add_middleware(
 training_jobs = {}
 models = {}
 data_cache = {}
+market_analysis_cache = {}
 
 # Pydantic models for API
 class StockRequest(BaseModel):
@@ -390,47 +391,65 @@ async def run_backtest(request: BacktestRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 # Analysis endpoints
-@app.get("/market-analysis/{symbol}")
-async def get_market_analysis(symbol: str):
-    """Get comprehensive market analysis"""
+@app.get("/market-analysis")
+async def get_market_analysis(symbols: str):
+    """
+    Get comprehensive market analysis for a list of symbols
+    Expects a comma-separated list of symbols
+    """
     try:
-        # Fetch data
-        data = data_fetcher.fetch_daily_data(symbol, "2mo")
-        
-        if data.empty:
-            raise HTTPException(status_code=404, detail=f"No data found for symbol {symbol}")
-        
-        # Add technical indicators
-        data_with_indicators = tech_indicators.calculate_all_indicators(data)
-        
-        # Calculate current signals
-        signals = tech_indicators.get_signal_strength(data_with_indicators)
-        
-        latest_data = signals.iloc[-1]
-        
-        # Market analysis
-        analysis = {
-            "symbol": symbol,
-            "current_price": float(latest_data["Close"]),
-            "price_change": float(latest_data["Close"] - data["Close"].iloc[-2]),
-            "price_change_pct": float((latest_data["Close"] - data["Close"].iloc[-2]) / data["Close"].iloc[-2] * 100),
-            "volume": int(latest_data["Volume"]),
-            "rsi": float(latest_data.get("RSI", 0)),
-            "macd": float(latest_data.get("MACD", 0)),
-            "bollinger_position": float(latest_data.get("BB_Position", 0)),
-            "combined_signal": int(latest_data.get("Combined_Signal", 0)),
-            "volatility": float(latest_data.get("Volatility", 0)),
-            "support_levels": [
-                float(latest_data.get("S1", 0)),
-                float(latest_data.get("S2", 0))
-            ],
-            "resistance_levels": [
-                float(latest_data.get("R1", 0)),
-                float(latest_data.get("R2", 0))
-            ]
-        }
-        
-        return analysis
+        # Parse comma-separated symbols
+        symbol_list = [s.strip().upper() for s in symbols.split(',')]
+        analyses = []
+        for symbol in symbol_list:
+            if symbol in market_analysis_cache and datetime.now() - market_analysis_cache[symbol]["date"] < timedelta(days=1):
+                print("Using cached market analysis")
+                analyses.append(market_analysis_cache[symbol])
+                continue
+            
+            print("Fetching new market analysis")
+
+            # Fetch data
+            data = data_fetcher.fetch_daily_data(symbol, "2mo")
+            
+            if data.empty:
+                raise HTTPException(status_code=404, detail=f"No data found for symbol {symbol}")
+            
+            # Add technical indicators
+            data_with_indicators = tech_indicators.calculate_all_indicators(data)
+            
+            # Calculate current signals
+            signals = tech_indicators.get_signal_strength(data_with_indicators)
+            
+            latest_data = signals.iloc[-1]
+            
+            # Market analysis
+            analysis = {
+                "date": datetime.now(),
+                "symbol": symbol,
+                "current_price": float(latest_data["Close"]),
+                "price_change": float(latest_data["Close"] - data["Close"].iloc[-2]),
+                "price_change_pct": float((latest_data["Close"] - data["Close"].iloc[-2]) / data["Close"].iloc[-2] * 100),
+                "volume": int(latest_data["Volume"]),
+                "rsi": float(latest_data.get("RSI", 0)),
+                "macd": float(latest_data.get("MACD", 0)),
+                "bollinger_position": float(latest_data.get("BB_Position", 0)),
+                "combined_signal": int(latest_data.get("Combined_Signal", 0)),
+                "volatility": float(latest_data.get("Volatility", 0)),
+                "support_levels": [
+                    float(latest_data.get("S1", 0)),
+                    float(latest_data.get("S2", 0))
+                ],
+                "resistance_levels": [
+                    float(latest_data.get("R1", 0)),
+                    float(latest_data.get("R2", 0))
+                ]
+            }
+            
+            market_analysis_cache[symbol] = analysis
+            analyses.append(analysis)
+            
+        return analyses
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
