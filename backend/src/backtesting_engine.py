@@ -90,10 +90,9 @@ class MLTradingStrategy(TradingStrategy):
     """
     
     def __init__(self, model, initial_capital: float = 10000, 
-                 transaction_cost: float = 0, confidence_threshold: float = 0.6):
+                 transaction_cost: float = 0):
         super().__init__(initial_capital, transaction_cost)
         self.model = model
-        self.confidence_threshold = confidence_threshold
         
     def backtest(self, data: pd.DataFrame) -> Dict:
         """
