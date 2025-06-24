@@ -61,7 +61,7 @@ export default function ModelDetailsDialog({ open, onClose, modelDetails }: Mode
                     <Typography variant="body2" color="text.secondary">
                       Symbol
                     </Typography>
-                    <Typography variant="body1" fontWeight="bold">
+                    <Typography variant="body1">
                       {modelDetails.symbol}
                     </Typography>
                   </Grid>
@@ -69,7 +69,7 @@ export default function ModelDetailsDialog({ open, onClose, modelDetails }: Mode
                     <Typography variant="body2" color="text.secondary">
                       Model Type
                     </Typography>
-                    <Typography variant="body1" fontWeight="bold">
+                    <Typography variant="body1">
                       {modelDetails.model_type.toUpperCase()}
                     </Typography>
                   </Grid>
@@ -102,7 +102,7 @@ export default function ModelDetailsDialog({ open, onClose, modelDetails }: Mode
                     <Typography variant="body2" color="text.secondary">
                       Epochs
                     </Typography>
-                    <Typography variant="body1" fontWeight="bold">
+                    <Typography variant="body1">
                       {modelDetails.training_params.epochs}
                     </Typography>
                   </Grid>
@@ -110,7 +110,7 @@ export default function ModelDetailsDialog({ open, onClose, modelDetails }: Mode
                     <Typography variant="body2" color="text.secondary">
                       Batch Size
                     </Typography>
-                    <Typography variant="body1" fontWeight="bold">
+                    <Typography variant="body1">
                       {modelDetails.training_params.batch_size}
                     </Typography>
                   </Grid>
@@ -118,7 +118,7 @@ export default function ModelDetailsDialog({ open, onClose, modelDetails }: Mode
                     <Typography variant="body2" color="text.secondary">
                       Learning Rate
                     </Typography>
-                    <Typography variant="body1" fontWeight="bold">
+                    <Typography variant="body1">
                       {modelDetails.training_params.learning_rate}
                     </Typography>
                   </Grid>
@@ -126,7 +126,7 @@ export default function ModelDetailsDialog({ open, onClose, modelDetails }: Mode
                     <Typography variant="body2" color="text.secondary">
                       Sequence Length
                     </Typography>
-                    <Typography variant="body1" fontWeight="bold">
+                    <Typography variant="body1">
                       {modelDetails.training_params.sequence_length}
                     </Typography>
                   </Grid>
@@ -134,7 +134,7 @@ export default function ModelDetailsDialog({ open, onClose, modelDetails }: Mode
                     <Typography variant="body2" color="text.secondary">
                       Prediction Horizon
                     </Typography>
-                    <Typography variant="body1" fontWeight="bold">
+                    <Typography variant="body1">
                       {modelDetails.training_params.prediction_horizon} days
                     </Typography>
                   </Grid>
@@ -142,7 +142,7 @@ export default function ModelDetailsDialog({ open, onClose, modelDetails }: Mode
                     <Typography variant="body2" color="text.secondary">
                       Threshold
                     </Typography>
-                    <Typography variant="body1" fontWeight="bold">
+                    <Typography variant="body1">
                       {formatPercentage(modelDetails.training_params.threshold)}
                     </Typography>
                   </Grid>
@@ -249,7 +249,7 @@ export default function ModelDetailsDialog({ open, onClose, modelDetails }: Mode
                         <Typography variant="body2" color="text.secondary">
                           Final Training Loss
                         </Typography>
-                        <Typography variant="body1" fontWeight="bold">
+                        <Typography variant="body1">
                           {modelDetails.training_history.train_losses.slice(-1)[0]?.toFixed(4) || "N/A"}
                         </Typography>
                       </Grid>
@@ -259,7 +259,7 @@ export default function ModelDetailsDialog({ open, onClose, modelDetails }: Mode
                         <Typography variant="body2" color="text.secondary">
                           Final Validation Loss
                         </Typography>
-                        <Typography variant="body1" fontWeight="bold">
+                        <Typography variant="body1">
                           {modelDetails.training_history.val_losses.slice(-1)[0]?.toFixed(4) || "N/A"}
                         </Typography>
                       </Grid>
@@ -268,7 +268,7 @@ export default function ModelDetailsDialog({ open, onClose, modelDetails }: Mode
                       <Typography variant="body2" color="text.secondary">
                         Total Epochs Completed
                       </Typography>
-                      <Typography variant="body1" fontWeight="bold">
+                      <Typography variant="body1">
                         {modelDetails.training_history.train_losses?.length || 0}
                       </Typography>
                     </Grid>

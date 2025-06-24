@@ -1,5 +1,5 @@
 import React from "react";
-import { AppBar, Toolbar, Typography, Box, Button, IconButton, Menu, MenuItem, useTheme } from "@mui/material";
+import { AppBar, Toolbar, Typography, Box, Button, IconButton, Menu, MenuItem } from "@mui/material";
 import {
   Dashboard as DashboardIcon,
   ModelTraining as TrainingIcon,
@@ -8,8 +8,7 @@ import {
 } from "@mui/icons-material";
 import { useNavigate, useLocation } from "react-router-dom";
 
-const Navbar: React.FC = () => {
-  const theme = useTheme();
+function Navbar() {
   const navigate = useNavigate();
   const location = useLocation();
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
@@ -19,7 +18,7 @@ const Navbar: React.FC = () => {
   };
 
   const handleMenuClose = () => {
-    setAnchorEl(anchorEl);
+    setAnchorEl(null);
   };
 
   const navItems = [
@@ -37,23 +36,27 @@ const Navbar: React.FC = () => {
       position="sticky"
       elevation={0}
       sx={{
-        background: "linear-gradient(135deg, #1a1d35 0%, #0a0e27 100%)",
-        borderBottom: "1px solid rgba(255, 255, 255, 0.1)",
+        background: "linear-gradient(135deg, #1a1a1a 0%, #262626 100%)",
+        borderBottom: "1px solid rgba(148, 163, 184, 0.08)",
+        backdropFilter: "blur(20px)",
+        boxShadow: "0 1px 3px 0 rgba(0, 0, 0, 0.3), 0 1px 2px 0 rgba(0, 0, 0, 0.06)",
       }}
     >
-      <Toolbar sx={{ px: 3 }}>
+      <Toolbar sx={{ px: 3, py: 1 }}>
         {/* Logo and Title */}
         <Box sx={{ display: "flex", alignItems: "center", mr: 4 }}>
-          <img src="/logo.svg" alt="logo" style={{ width: 64, height: 64, marginRight: 8 }} />
+          <img src="/logo.svg" alt="logo" style={{ width: 56, height: 56, marginRight: 12 }} />
           <Typography
             variant="h5"
             component="div"
             sx={{
               fontWeight: 700,
-              background: "linear-gradient(45deg, #1976d2 30%, #42a5f5 90%)",
+              fontSize: "1.5rem",
+              background: "linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%)",
               backgroundClip: "text",
               WebkitBackgroundClip: "text",
               WebkitTextFillColor: "transparent",
+              letterSpacing: "-0.02em",
             }}
           >
             AI Trader
@@ -67,17 +70,19 @@ const Navbar: React.FC = () => {
               key={item.path}
               onClick={() => navigate(item.path)}
               startIcon={item.icon}
+              variant={isActive(item.path) ? "contained" : "text"}
               sx={{
-                color: isActive(item.path) ? theme.palette.primary.main : "rgba(255, 255, 255, 0.7)",
-                backgroundColor: isActive(item.path) ? "rgba(25, 118, 210, 0.1)" : "transparent",
-                borderRadius: 2,
-                px: 2,
+                borderRadius: 2.5,
+                px: 2.5,
                 py: 1,
-                fontWeight: isActive(item.path) ? 600 : 400,
-                border: isActive(item.path) ? `1px solid ${theme.palette.primary.main}` : "1px solid transparent",
+                fontSize: "0.875rem",
+                fontWeight: isActive(item.path) ? 600 : 500,
                 "&:hover": {
-                  backgroundColor: "rgba(25, 118, 210, 0.1)",
-                  color: theme.palette.primary.light,
+                  transform: "translateY(-1px)",
+                  boxShadow: "0 2px 8px 0 rgba(59, 130, 246, 0.2)",
+                },
+                "& .MuiButton-startIcon": {
+                  marginRight: 1,
                 },
               }}
             >
@@ -95,6 +100,13 @@ const Navbar: React.FC = () => {
             aria-haspopup="true"
             onClick={handleMenuClick}
             color="inherit"
+            sx={{
+              color: "#cbd5e1",
+              "&:hover": {
+                backgroundColor: "rgba(59, 130, 246, 0.08)",
+                color: "#60a5fa",
+              },
+            }}
           >
             <MoreIcon />
           </IconButton>
@@ -105,8 +117,11 @@ const Navbar: React.FC = () => {
             onClose={handleMenuClose}
             sx={{
               "& .MuiPaper-root": {
-                backgroundColor: theme.palette.background.paper,
-                border: `1px solid ${theme.palette.divider}`,
+                backgroundColor: "#1a1a1a",
+                border: "1px solid rgba(148, 163, 184, 0.08)",
+                borderRadius: 3,
+                backdropFilter: "blur(20px)",
+                boxShadow: "0 4px 20px rgba(0, 0, 0, 0.3), 0 1px 3px rgba(0, 0, 0, 0.4)",
               },
             }}
           >
@@ -118,13 +133,23 @@ const Navbar: React.FC = () => {
                   handleMenuClose();
                 }}
                 sx={{
-                  color: isActive(item.path) ? theme.palette.primary.main : "inherit",
-                  backgroundColor: isActive(item.path) ? "rgba(25, 118, 210, 0.1)" : "transparent",
+                  color: isActive(item.path) ? "#ffffff" : "#cbd5e1",
+                  backgroundColor: isActive(item.path) ? "#3b82f6" : "transparent",
+                  borderRadius: 2,
+                  mx: 1,
+                  my: 0.5,
+                  transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
+                  "&:hover": {
+                    backgroundColor: isActive(item.path) ? "#2563eb" : "rgba(59, 130, 246, 0.08)",
+                    color: isActive(item.path) ? "#ffffff" : "#60a5fa",
+                  },
                 }}
               >
-                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
                   {item.icon}
-                  {item.label}
+                  <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                    {item.label}
+                  </Typography>
                 </Box>
               </MenuItem>
             ))}
@@ -138,10 +163,16 @@ const Navbar: React.FC = () => {
             alignItems: "center",
             ml: 2,
             px: 2,
-            py: 0.5,
-            borderRadius: 2,
-            backgroundColor: "rgba(46, 125, 50, 0.1)",
-            border: "1px solid rgba(46, 125, 50, 0.3)",
+            py: 0.75,
+            borderRadius: 2.5,
+            backgroundColor: "rgba(16, 185, 129, 0.1)",
+            border: "1px solid rgba(16, 185, 129, 0.2)",
+            transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
+            "&:hover": {
+              backgroundColor: "rgba(16, 185, 129, 0.15)",
+              transform: "translateY(-1px)",
+              boxShadow: "0 2px 8px 0 rgba(16, 185, 129, 0.2)",
+            },
           }}
         >
           <Box
@@ -149,23 +180,31 @@ const Navbar: React.FC = () => {
               width: 8,
               height: 8,
               borderRadius: "50%",
-              backgroundColor: theme.palette.success.main,
+              backgroundColor: "#10b981",
               mr: 1,
               animation: "pulse 2s infinite",
               "@keyframes pulse": {
-                "0%": { opacity: 1 },
-                "50%": { opacity: 0.5 },
-                "100%": { opacity: 1 },
+                "0%": { opacity: 1, transform: "scale(1)" },
+                "50%": { opacity: 0.7, transform: "scale(1.1)" },
+                "100%": { opacity: 1, transform: "scale(1)" },
               },
             }}
           />
-          <Typography variant="caption" sx={{ color: theme.palette.success.main, fontWeight: 600 }}>
+          <Typography
+            variant="caption"
+            sx={{
+              color: "#10b981",
+              fontWeight: 600,
+              fontSize: "0.8125rem",
+              letterSpacing: "0.02em",
+            }}
+          >
             Live
           </Typography>
         </Box>
       </Toolbar>
     </AppBar>
   );
-};
+}
 
 export default Navbar;

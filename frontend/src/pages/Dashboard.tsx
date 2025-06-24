@@ -176,7 +176,7 @@ const Dashboard: React.FC = () => {
         </Typography>
         <Box sx={{ mt: 2 }}>
           <Tooltip title="Refresh Data">
-            <IconButton onClick={fetchData} sx={{ bgcolor: "primary.main", color: "white" }}>
+            <IconButton onClick={fetchData}>
               <Refresh />
             </IconButton>
           </Tooltip>

@@ -116,7 +116,7 @@ export default function Backtesting() {
                 layout={JSON.parse(plots.portfolio_comparison).layout}
                 title="Portfolio Value Comparison"
                 height={420}
-                accentColor="#1976d2"
+                accentColor="#3b82f6"
               />
             </Grid>
           )}
@@ -129,7 +129,7 @@ export default function Backtesting() {
                 layout={JSON.parse(plots.returns_distribution).layout}
                 title="Returns Distribution"
                 height={370}
-                accentColor="#2e7d32"
+                accentColor="#10b981"
               />
             </Grid>
           )}
@@ -142,7 +142,8 @@ export default function Backtesting() {
                 layout={JSON.parse(plots.drawdown_analysis).layout}
                 title="Drawdown Analysis"
                 height={370}
-                accentColor="#dc004e"
+                accentColor="#ef4444"
+                legendPosition="bottom-left"
               />
             </Grid>
           )}
@@ -155,7 +156,7 @@ export default function Backtesting() {
                 layout={JSON.parse(plots.trade_analysis).layout}
                 title="Trading Signals & Price Action"
                 height={420}
-                accentColor="#ed6c02"
+                accentColor="#f59e0b"
               />
             </Grid>
           )}
@@ -204,6 +205,7 @@ export default function Backtesting() {
                     <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
                       <Typography variant="h6">Selected Model Details</Typography>
                       <Button
+                        variant="outlined"
                         startIcon={<Info />}
                         onClick={() => {
                           const model = models.find((m) => m.model_id === selectedModel);
@@ -227,7 +229,7 @@ export default function Backtesting() {
                             <Typography variant="body2" color="text.secondary">
                               Symbol
                             </Typography>
-                            <Typography variant="body1" fontWeight="bold">
+                            <Typography variant="body1">
                               {model.symbol}
                             </Typography>
                           </Grid>
@@ -235,7 +237,7 @@ export default function Backtesting() {
                             <Typography variant="body2" color="text.secondary">
                               Model Type
                             </Typography>
-                            <Typography variant="body1" fontWeight="bold">
+                            <Typography variant="body1">
                               {model.model_type.toUpperCase()}
                             </Typography>
                           </Grid>
