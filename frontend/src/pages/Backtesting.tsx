@@ -201,14 +201,12 @@ export default function Backtesting() {
               <Grid size={{ xs: 12 }}>
                 <Card variant="outlined" sx={{ mt: 2 }}>
                   <CardContent>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                      <Typography variant="h6">
-                        Selected Model Details
-                      </Typography>
+                    <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
+                      <Typography variant="h6">Selected Model Details</Typography>
                       <Button
                         startIcon={<Info />}
                         onClick={() => {
-                          const model = models.find(m => m.model_id === selectedModel);
+                          const model = models.find((m) => m.model_id === selectedModel);
                           if (model) {
                             setSelectedModelForDetails(model);
                             setDetailsDialogOpen(true);
@@ -220,9 +218,9 @@ export default function Backtesting() {
                       </Button>
                     </Box>
                     {(() => {
-                      const model = models.find(m => m.model_id === selectedModel);
+                      const model = models.find((m) => m.model_id === selectedModel);
                       if (!model) return null;
-                      
+
                       return (
                         <Grid container spacing={2}>
                           <Grid size={{ xs: 6, sm: 3 }}>
@@ -245,19 +243,13 @@ export default function Backtesting() {
                             <Typography variant="body2" color="text.secondary">
                               Accuracy
                             </Typography>
-                            <Chip 
-                              label={formatPercentage(model.accuracy)} 
-                              color="primary" 
-                              size="small"
-                            />
+                            <Chip label={formatPercentage(model.accuracy)} color="primary" size="small" />
                           </Grid>
                           <Grid size={{ xs: 6, sm: 3 }}>
                             <Typography variant="body2" color="text.secondary">
                               Created
                             </Typography>
-                            <Typography variant="body2">
-                              {new Date(model.created_at).toLocaleDateString()}
-                            </Typography>
+                            <Typography variant="body2">{new Date(model.created_at).toLocaleDateString()}</Typography>
                           </Grid>
                         </Grid>
                       );
@@ -490,15 +482,17 @@ export default function Backtesting() {
   }
 
   return (
-    <Box sx={{ 
-      display: 'flex', 
-      justifyContent: 'center', 
-      minHeight: '100vh', 
-      py: 4,
-      backgroundColor: 'background.default'
-    }}>
+    <Box
+      sx={{
+        display: "flex",
+        justifyContent: "center",
+        minHeight: "100vh",
+        py: 4,
+        backgroundColor: "background.default",
+      }}
+    >
       <Container maxWidth="xl">
-        <Box sx={{ mb: 4, textAlign: 'center' }}>
+        <Box sx={{ mb: 4, textAlign: "center" }}>
           <Typography variant="h3" component="h1" gutterBottom fontWeight={700}>
             Backtesting
           </Typography>

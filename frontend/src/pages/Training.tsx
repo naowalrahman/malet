@@ -104,11 +104,11 @@ export default function ModelTraining() {
       // Start training and get job ID
       const response = await apiService.trainModel(request);
       const jobId = response.job_id;
-      
+
       // Wait for training completion
       let completed = false;
       while (!completed) {
-        await new Promise(resolve => setTimeout(resolve, 3000)); // Wait 3 seconds
+        await new Promise((resolve) => setTimeout(resolve, 3000)); // Wait 3 seconds
         try {
           const status = await apiService.getTrainingStatus(jobId);
           if (status.status === "completed") {
@@ -135,8 +135,6 @@ export default function ModelTraining() {
       setActiveStep(0);
     }
   }
-
-
 
   const handleDeleteModel = async (modelId: string) => {
     try {
@@ -230,8 +228,8 @@ export default function ModelTraining() {
                         max={500}
                         step={10}
                         marks={Array.from({ length: 500 / 50 }, (_, i) => ({
-                          value: 50 + (i * 50),
-                          label: String(50 + (i * 50))
+                          value: 50 + i * 50,
+                          label: String(50 + i * 50),
                         }))}
                       />
                     </Grid>
@@ -245,8 +243,8 @@ export default function ModelTraining() {
                         max={128}
                         step={8}
                         marks={Array.from({ length: 128 / 16 }, (_, i) => ({
-                          value: 16 + (i * 16),
-                          label: String(16 + (i * 16))
+                          value: 16 + i * 16,
+                          label: String(16 + i * 16),
                         }))}
                       />
                     </Grid>
@@ -260,8 +258,8 @@ export default function ModelTraining() {
                         max={0.01}
                         step={0.001}
                         marks={Array.from({ length: 0.01 / 0.001 }, (_, i) => ({
-                          value: 0.002 + (i * 0.001),
-                          label: String(Math.round((0.002 + (i * 0.001)) * 1000) / 1000),
+                          value: 0.002 + i * 0.001,
+                          label: String(Math.round((0.002 + i * 0.001) * 1000) / 1000),
                         }))}
                       />
                     </Grid>
@@ -275,8 +273,8 @@ export default function ModelTraining() {
                         max={240}
                         step={5}
                         marks={Array.from({ length: 240 / 20 }, (_, i) => ({
-                          value: 20 + (i * 20),
-                          label: String(20 + (i * 20))
+                          value: 20 + i * 20,
+                          label: String(20 + i * 20),
                         }))}
                       />
                     </Grid>
@@ -307,13 +305,15 @@ export default function ModelTraining() {
             Training in Progress
           </Typography>
 
-          <Box sx={{ 
-            display: 'flex', 
-            flexDirection: 'column', 
-            alignItems: 'center', 
-            py: 6,
-            minHeight: 300
-          }}>
+          <Box
+            sx={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              py: 6,
+              minHeight: 300,
+            }}
+          >
             <CircularProgress size={60} sx={{ mb: 3 }} />
             <Typography variant="body1" color="text.secondary" gutterBottom>
               Training Model: {modelType.toUpperCase()} for {symbol}
@@ -435,15 +435,17 @@ export default function ModelTraining() {
   }
 
   return (
-    <Box sx={{ 
-      display: 'flex', 
-      justifyContent: 'center', 
-      minHeight: '100vh', 
-      py: 4,
-      backgroundColor: 'background.default'
-    }}>
+    <Box
+      sx={{
+        display: "flex",
+        justifyContent: "center",
+        minHeight: "100vh",
+        py: 4,
+        backgroundColor: "background.default",
+      }}
+    >
       <Container maxWidth="xl">
-        <Typography variant="h3" sx={{ mb: 4, fontWeight: 700, textAlign: 'center' }}>
+        <Typography variant="h3" sx={{ mb: 4, fontWeight: 700, textAlign: "center" }}>
           Model Training
         </Typography>
 
@@ -484,7 +486,7 @@ export default function ModelTraining() {
                     <ListItem
                       key={model.model_id}
                       secondaryAction={
-                        <Box sx={{ display: 'flex', gap: 1 }}>
+                        <Box sx={{ display: "flex", gap: 1 }}>
                           <IconButton
                             onClick={() => {
                               setSelectedModelForDetails(model);
@@ -510,11 +512,11 @@ export default function ModelTraining() {
                       <ListItemText
                         primary={`${model.symbol} - ${model.model_type.toUpperCase()}`}
                         secondary={`Accuracy: ${model.accuracy ? (model.accuracy * 100).toFixed(1) : "N/A"}%`}
-                        sx={{ 
-                          cursor: 'pointer',
-                          '&:hover': {
-                            backgroundColor: 'action.hover'
-                          }
+                        sx={{
+                          cursor: "pointer",
+                          "&:hover": {
+                            backgroundColor: "action.hover",
+                          },
                         }}
                         onClick={() => {
                           setSelectedModelForDetails(model);

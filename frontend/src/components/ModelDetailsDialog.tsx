@@ -21,14 +21,13 @@ interface ModelDetailsDialogProps {
 }
 
 export default function ModelDetailsDialog({ open, onClose, modelDetails }: ModelDetailsDialogProps) {
-
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+    return new Date(dateString).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
     });
   };
 
@@ -47,9 +46,8 @@ export default function ModelDetailsDialog({ open, onClose, modelDetails }: Mode
           Model Details
         </Typography>
       </DialogTitle>
-      
+
       <DialogContent>
-        
         {modelDetails && (
           <Box>
             {/* Basic Information */}
@@ -79,15 +77,13 @@ export default function ModelDetailsDialog({ open, onClose, modelDetails }: Mode
                     <Typography variant="body2" color="text.secondary">
                       Created At
                     </Typography>
-                    <Typography variant="body1">
-                      {formatDate(modelDetails.created_at)}
-                    </Typography>
+                    <Typography variant="body1">{formatDate(modelDetails.created_at)}</Typography>
                   </Grid>
                   <Grid size={{ xs: 6 }}>
                     <Typography variant="body2" color="text.secondary">
                       Model ID
                     </Typography>
-                    <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: '0.8rem' }}>
+                    <Typography variant="body2" sx={{ fontFamily: "monospace", fontSize: "0.8rem" }}>
                       {modelDetails.model_id}
                     </Typography>
                   </Grid>
@@ -151,7 +147,7 @@ export default function ModelDetailsDialog({ open, onClose, modelDetails }: Mode
                     </Typography>
                   </Grid>
                 </Grid>
-                
+
                 {(modelDetails.training_params.start_date || modelDetails.training_params.end_date) && (
                   <>
                     <Divider sx={{ my: 2 }} />
@@ -193,9 +189,9 @@ export default function ModelDetailsDialog({ open, onClose, modelDetails }: Mode
                       <Typography variant="body2" color="text.secondary">
                         Accuracy
                       </Typography>
-                      <Chip 
-                        label={formatPercentage(modelDetails.training_metrics.accuracy)} 
-                        color="primary" 
+                      <Chip
+                        label={formatPercentage(modelDetails.training_metrics.accuracy)}
+                        color="primary"
                         size="medium"
                       />
                     </Box>
@@ -205,9 +201,9 @@ export default function ModelDetailsDialog({ open, onClose, modelDetails }: Mode
                       <Typography variant="body2" color="text.secondary">
                         Precision
                       </Typography>
-                      <Chip 
-                        label={formatPercentage(modelDetails.training_metrics.precision)} 
-                        color="secondary" 
+                      <Chip
+                        label={formatPercentage(modelDetails.training_metrics.precision)}
+                        color="secondary"
                         size="medium"
                       />
                     </Box>
@@ -217,9 +213,9 @@ export default function ModelDetailsDialog({ open, onClose, modelDetails }: Mode
                       <Typography variant="body2" color="text.secondary">
                         Recall
                       </Typography>
-                      <Chip 
-                        label={formatPercentage(modelDetails.training_metrics.recall)} 
-                        color="success" 
+                      <Chip
+                        label={formatPercentage(modelDetails.training_metrics.recall)}
+                        color="success"
                         size="medium"
                       />
                     </Box>
@@ -229,9 +225,9 @@ export default function ModelDetailsDialog({ open, onClose, modelDetails }: Mode
                       <Typography variant="body2" color="text.secondary">
                         F1-Score
                       </Typography>
-                      <Chip 
-                        label={formatPercentage(modelDetails.training_metrics.f1_score)} 
-                        color="info" 
+                      <Chip
+                        label={formatPercentage(modelDetails.training_metrics.f1_score)}
+                        color="info"
                         size="medium"
                       />
                     </Box>
@@ -283,10 +279,10 @@ export default function ModelDetailsDialog({ open, onClose, modelDetails }: Mode
           </Box>
         )}
       </DialogContent>
-      
+
       <DialogActions>
         <Button onClick={handleClose}>Close</Button>
       </DialogActions>
     </Dialog>
   );
-} 
+}

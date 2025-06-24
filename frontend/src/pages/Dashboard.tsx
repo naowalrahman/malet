@@ -167,7 +167,7 @@ const Dashboard: React.FC = () => {
   return (
     <Container maxWidth="xl" sx={{ py: 4 }}>
       {/* Header */}
-      <Box sx={{ mb: 4, textAlign: 'center' }}>
+      <Box sx={{ mb: 4, textAlign: "center" }}>
         <Typography variant="h3" component="h1" gutterBottom fontWeight={700}>
           Trading Dashboard
         </Typography>
@@ -175,8 +175,8 @@ const Dashboard: React.FC = () => {
           AI-powered trading insights and analytics.
         </Typography>
         <Box sx={{ mt: 2 }}>
-        <Tooltip title="Refresh Data">
-          <IconButton onClick={fetchData} sx={{ bgcolor: "primary.main", color: "white" }}>
+          <Tooltip title="Refresh Data">
+            <IconButton onClick={fetchData} sx={{ bgcolor: "primary.main", color: "white" }}>
               <Refresh />
             </IconButton>
           </Tooltip>
