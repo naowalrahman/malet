@@ -145,7 +145,9 @@ function ModelTraining() {
             statusError.message?.includes("timeout") ||
             statusError.message?.includes("Network Error")
           ) {
-            console.warn("Error checking training status... continuing polling because error was timeout or network error");
+            console.warn(
+              "Error checking training status... continuing polling because error was timeout or network error"
+            );
             return; // Continue polling
           }
 

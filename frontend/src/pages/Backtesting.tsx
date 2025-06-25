@@ -229,17 +229,13 @@ function Backtesting() {
                             <Typography variant="body2" color="text.secondary">
                               Symbol
                             </Typography>
-                            <Typography variant="body1">
-                              {model.symbol}
-                            </Typography>
+                            <Typography variant="body1">{model.symbol}</Typography>
                           </Grid>
                           <Grid size={{ xs: 6, sm: 3 }}>
                             <Typography variant="body2" color="text.secondary">
                               Model Type
                             </Typography>
-                            <Typography variant="body1">
-                              {model.model_type.toUpperCase()}
-                            </Typography>
+                            <Typography variant="body1">{model.model_type.toUpperCase()}</Typography>
                           </Grid>
                           <Grid size={{ xs: 6, sm: 3 }}>
                             <Typography variant="body2" color="text.secondary">

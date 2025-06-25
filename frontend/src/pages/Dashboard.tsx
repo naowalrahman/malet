@@ -210,14 +210,16 @@ function Dashboard() {
             title="Active Models"
             value={activeModels.length}
             icon={<Psychology sx={{ fontSize: 32 }} />}
-            color="primary" />
+            color="primary"
+          />
         </Grid>
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <MetricCard
             title="Avg Accuracy"
             value={`${(avgAccuracy * 100).toFixed(1)}%`}
             icon={<Assessment sx={{ fontSize: 32 }} />}
-            color="success" />
+            color="success"
+          />
         </Grid>
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <MetricCard
@@ -225,7 +227,8 @@ function Dashboard() {
             value={selectedAnalysis ? `$${selectedAnalysis.current_price.toFixed(2)}` : "$0.00"}
             change={selectedAnalysis ? selectedAnalysis.price_change_pct : undefined}
             icon={<Timeline sx={{ fontSize: 32 }} />}
-            color="info" />
+            color="info"
+          />
         </Grid>
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <MetricCard
@@ -233,7 +236,8 @@ function Dashboard() {
             value="$10,000"
             change={2.34}
             icon={<AccountBalance sx={{ fontSize: 32 }} />}
-            color="secondary" />
+            color="secondary"
+          />
         </Grid>
       </Grid>
 
@@ -284,7 +288,8 @@ function Dashboard() {
                       bgcolor: `${getSignalColor(selectedAnalysis.combined_signal)}20`,
                       color: getSignalColor(selectedAnalysis.combined_signal),
                       fontWeight: 600,
-                    }} />
+                    }}
+                  />
                 )}
               </Box>
 
@@ -299,11 +304,13 @@ function Dashboard() {
                     }}
                   >
                     Analysis for {selectedSymbol} -{" "}
-                    {{
-                      SPY: "S&P 500 ETF",
-                      DIA: "Dow Jones ETF",
-                      QQQ: "NASDAQ ETF",
-                    }[selectedAnalysis.symbol]}
+                    {
+                      {
+                        SPY: "S&P 500 ETF",
+                        DIA: "Dow Jones ETF",
+                        QQQ: "NASDAQ ETF",
+                      }[selectedAnalysis.symbol]
+                    }
                   </Typography>
                   <Grid container spacing={3}>
                     <Grid size={{ xs: 12, md: 6 }}>
@@ -321,13 +328,15 @@ function Dashboard() {
                                 borderRadius: 4,
                                 bgcolor: "rgba(255, 255, 255, 0.1)",
                                 "& .MuiLinearProgress-bar": {
-                                  bgcolor: selectedAnalysis.rsi > 70
-                                    ? theme.palette.error.main
-                                    : selectedAnalysis.rsi < 30
-                                      ? theme.palette.success.main
-                                      : theme.palette.warning.main,
+                                  bgcolor:
+                                    selectedAnalysis.rsi > 70
+                                      ? theme.palette.error.main
+                                      : selectedAnalysis.rsi < 30
+                                        ? theme.palette.success.main
+                                        : theme.palette.warning.main,
                                 },
-                              }} />
+                              }}
+                            />
                           </Box>
                           <Typography variant="body2" sx={{ minWidth: 35, fontWeight: 600 }}>
                             {selectedAnalysis.rsi.toFixed(0)}
@@ -351,7 +360,8 @@ function Dashboard() {
                                 "& .MuiLinearProgress-bar": {
                                   bgcolor: theme.palette.info.main,
                                 },
-                              }} />
+                              }}
+                            />
                           </Box>
                           <Typography variant="body2" sx={{ minWidth: 35, fontWeight: 600 }}>
                             {(selectedAnalysis.bollinger_position * 100).toFixed(0)}%

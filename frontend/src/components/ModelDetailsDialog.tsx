@@ -61,17 +61,13 @@ function ModelDetailsDialog({ open, onClose, modelDetails }: ModelDetailsDialogP
                     <Typography variant="body2" color="text.secondary">
                       Symbol
                     </Typography>
-                    <Typography variant="body1">
-                      {modelDetails.symbol}
-                    </Typography>
+                    <Typography variant="body1">{modelDetails.symbol}</Typography>
                   </Grid>
                   <Grid size={{ xs: 6 }}>
                     <Typography variant="body2" color="text.secondary">
                       Model Type
                     </Typography>
-                    <Typography variant="body1">
-                      {modelDetails.model_type.toUpperCase()}
-                    </Typography>
+                    <Typography variant="body1">{modelDetails.model_type.toUpperCase()}</Typography>
                   </Grid>
                   <Grid size={{ xs: 6 }}>
                     <Typography variant="body2" color="text.secondary">
@@ -102,49 +98,37 @@ function ModelDetailsDialog({ open, onClose, modelDetails }: ModelDetailsDialogP
                     <Typography variant="body2" color="text.secondary">
                       Epochs
                     </Typography>
-                    <Typography variant="body1">
-                      {modelDetails.training_params.epochs}
-                    </Typography>
+                    <Typography variant="body1">{modelDetails.training_params.epochs}</Typography>
                   </Grid>
                   <Grid size={{ xs: 6, sm: 4 }}>
                     <Typography variant="body2" color="text.secondary">
                       Batch Size
                     </Typography>
-                    <Typography variant="body1">
-                      {modelDetails.training_params.batch_size}
-                    </Typography>
+                    <Typography variant="body1">{modelDetails.training_params.batch_size}</Typography>
                   </Grid>
                   <Grid size={{ xs: 6, sm: 4 }}>
                     <Typography variant="body2" color="text.secondary">
                       Learning Rate
                     </Typography>
-                    <Typography variant="body1">
-                      {modelDetails.training_params.learning_rate}
-                    </Typography>
+                    <Typography variant="body1">{modelDetails.training_params.learning_rate}</Typography>
                   </Grid>
                   <Grid size={{ xs: 6, sm: 4 }}>
                     <Typography variant="body2" color="text.secondary">
                       Sequence Length
                     </Typography>
-                    <Typography variant="body1">
-                      {modelDetails.training_params.sequence_length}
-                    </Typography>
+                    <Typography variant="body1">{modelDetails.training_params.sequence_length}</Typography>
                   </Grid>
                   <Grid size={{ xs: 6, sm: 4 }}>
                     <Typography variant="body2" color="text.secondary">
                       Prediction Horizon
                     </Typography>
-                    <Typography variant="body1">
-                      {modelDetails.training_params.prediction_horizon} days
-                    </Typography>
+                    <Typography variant="body1">{modelDetails.training_params.prediction_horizon} days</Typography>
                   </Grid>
                   <Grid size={{ xs: 6, sm: 4 }}>
                     <Typography variant="body2" color="text.secondary">
                       Threshold
                     </Typography>
-                    <Typography variant="body1">
-                      {formatPercentage(modelDetails.training_params.threshold)}
-                    </Typography>
+                    <Typography variant="body1">{formatPercentage(modelDetails.training_params.threshold)}</Typography>
                   </Grid>
                 </Grid>
 
@@ -268,9 +252,7 @@ function ModelDetailsDialog({ open, onClose, modelDetails }: ModelDetailsDialogP
                       <Typography variant="body2" color="text.secondary">
                         Total Epochs Completed
                       </Typography>
-                      <Typography variant="body1">
-                        {modelDetails.training_history.train_losses?.length || 0}
-                      </Typography>
+                      <Typography variant="body1">{modelDetails.training_history.train_losses?.length || 0}</Typography>
                     </Grid>
                   </Grid>
                 </CardContent>

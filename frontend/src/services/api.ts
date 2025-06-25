@@ -224,8 +224,8 @@ class ApiService {
 
   // Analysis endpoints
   async getMarketAnalysis(symbols: string[]): Promise<MarketAnalysis[]> {
-    const response = await axios.get(`${this.baseURL}/market-analysis`, { 
-      params: { symbols: symbols.join(',') } 
+    const response = await axios.get(`${this.baseURL}/market-analysis`, {
+      params: { symbols: symbols.join(",") },
     });
     return response.data;
   }
