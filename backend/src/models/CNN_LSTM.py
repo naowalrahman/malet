@@ -2,13 +2,13 @@ import torch
 import torch.nn as nn
 
 
-class CNNLSTMModel(nn.Module):
+class CNN_LSTM(nn.Module):
     """
     Combined CNN-LSTM model for trading
     """
 
     def __init__(self, input_size: int, sequence_length: int, hidden_size: int = 128):
-        super(CNNLSTMModel, self).__init__()
+        super(CNN_LSTM, self).__init__()
 
         # CNN layers
         self.conv1 = nn.Conv1d(in_channels=input_size, out_channels=64, kernel_size=3, padding=1)

@@ -1,6 +1,6 @@
-from models.LSTMTradingModel import LSTMTradingModel
-from models.TransformerTradingModel import TransformerTradingModel
-from models.CNNLSTMModel import CNNLSTMModel
+from models.LSTM import LSTM
+from models.Transformer import Transformer
+from models.CNN_LSTM import CNN_LSTM
 
 
 import numpy as np
@@ -42,7 +42,7 @@ class TradingModelTrainer:
         numeric_columns = df.select_dtypes(include=[np.number]).columns.tolist()
 
         # Remove target-related columns if they exist
-        exclude_columns = ['Symbol', 'Close_Future', 'Target', 'Signal']
+        exclude_columns = {'Symbol', 'Close_Future', 'Target', 'Signal'}
         numeric_columns = [col for col in numeric_columns if col not in exclude_columns]
 
         # Get the feature DataFrame
@@ -75,29 +75,38 @@ class TradingModelTrainer:
         """
         Create binary trading targets (0: Down, 1: Up)
         """
-        # Calculate future returns
+        # Calculate returns x (prediction_horizon) days into the future 
+        # (% return = price in x days / price today - 1)
         future_returns = df['Close'].shift(-prediction_horizon) / df['Close'] - 1
 
         # Create binary targets: 1 if price goes up, 0 if price goes down
         # Use a small threshold to avoid noise
         targets = np.where(future_returns > threshold, 1, 0)  # 1: Up, 0: Down
 
-        print(f"Target distribution: Up={np.sum(targets)}, Down={len(targets) - np.sum(targets)}")
-        print(f"Target ratio: {np.mean(targets):.3f} (Up ratio)")
+        up_targets = np.sum(targets)
+        num_targets = len(targets)
+        print(f"Target distribution: Up={up_targets}, Down={num_targets - up_targets}")
+        print(f"Target ratio: {(up_targets / num_targets):.3f} (Up ratio)")
         
         return pd.Series(targets, index=df.index)
 
     def create_sequences(self, features: np.ndarray, targets: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         """
         Create sequences for time series prediction
+        To see how this works, see: https://claude.ai/share/892517ac-889e-4ace-8bdf-d6ec87e6c216
         """
-        X, y = [], []
-
-        for i in range(self.sequence_length, len(features)):
-            X.append(features[i-self.sequence_length:i])
-            y.append(targets[i])
-
-        return np.array(X), np.array(y)
+        n_samples = len(features) - self.sequence_length
+        
+        if n_samples <= 0:
+            return np.array([]), np.array([])
+        
+        # Create indices for all sequences at once
+        indices = np.arange(n_samples)[:, None] + np.arange(self.sequence_length)
+        
+        X = features[indices]
+        y = targets[self.sequence_length:]
+        
+        return X, y
 
     def prepare_data(self, df: pd.DataFrame, prediction_horizon: int = 5,
                     threshold: float = 0.001) -> Tuple[torch.Tensor, torch.Tensor]:
@@ -119,7 +128,7 @@ class TradingModelTrainer:
         feature_df = feature_df.loc[common_index]
         targets = targets.loc[common_index]
 
-        # Remove rows with NaN targets
+        # Remove rows with NaN targets (ideally we would not have any)
         valid_indices = ~targets.isna()
         feature_df = feature_df[valid_indices]
         targets = targets[valid_indices]
@@ -127,7 +136,7 @@ class TradingModelTrainer:
         print(f"Valid data shape after removing NaN targets: {feature_df.shape}")
 
         if len(feature_df) < self.sequence_length:
-            raise ValueError(f"Not enough data points. Need at least {self.sequence_length}, got {len(feature_df)}")
+            raise ValueError(f"Not enough data points. Need at least {self.sequence_length} due to sequence length {self.sequence_length}, got {len(feature_df)}")
 
         # Scale features
         self.scaler = StandardScaler()
@@ -154,11 +163,11 @@ class TradingModelTrainer:
         Initialize the model based on type
         """
         if self.model_type == "lstm":
-            self.model = LSTMTradingModel(input_size=input_size)
+            self.model = LSTM(input_size=input_size)
         elif self.model_type == "cnn_lstm":
-            self.model = CNNLSTMModel(input_size=input_size, sequence_length=self.sequence_length)
+            self.model = CNN_LSTM(input_size=input_size, sequence_length=self.sequence_length)
         elif self.model_type == "transformer":
-            self.model = TransformerTradingModel(input_size=input_size)
+            self.model = Transformer(input_size=input_size)
         else:
             raise ValueError(f"Unknown model type: {self.model_type}")
 

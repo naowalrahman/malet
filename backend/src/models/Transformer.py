@@ -3,14 +3,14 @@ import torch.nn as nn
 import math
 
 
-class TransformerTradingModel(nn.Module):
+class Transformer(nn.Module):
     """
     Transformer-based model for trading
     """
 
     def __init__(self, input_size: int, d_model: int = 128, nhead: int = 8,
                  num_layers: int = 4, dropout: float = 0.1):
-        super(TransformerTradingModel, self).__init__()
+        super(Transformer, self).__init__()
 
         self.d_model = d_model
         self.input_projection = nn.Linear(input_size, d_model)
