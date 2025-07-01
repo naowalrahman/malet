@@ -15,7 +15,7 @@ $$/      $$/ $$/   $$/ $$$$$$$$/ $$$$$$$$/    $$/
 
 ---                                                     
 
-MALET is a platform to fetch financial data, train various deep learning models for trading, and backtest performance against historical market data.
+MALET (**MA**chine **LE**arning **T**rader) is a platform to fetch financial data, train various deep learning models for trading, and backtest performance against historical market data.
 
 ![MALET dashboard](img/dashboard.svg)
 
