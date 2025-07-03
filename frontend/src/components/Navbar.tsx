@@ -157,20 +157,20 @@ function Navbar() {
           </Menu>
         </Box>
 
-          <Button
-            variant="outlined"
-            color="inherit"
-            href="https://github.com/naowalrahman/malet"
-            target="_blank"
-            sx={{
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              ml: 2,
-            }}
-          >
-            <GitHubIcon />
-          </Button>
+        <Button
+          variant="outlined"
+          color="inherit"
+          href="https://github.com/naowalrahman/malet"
+          target="_blank"
+          sx={{
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            ml: 2,
+          }}
+        >
+          <GitHubIcon />
+        </Button>
       </Toolbar>
     </AppBar>
   );

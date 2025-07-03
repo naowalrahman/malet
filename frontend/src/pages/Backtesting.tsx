@@ -52,20 +52,18 @@ function formatPercentage(value: number): string {
   return `${(value * 100).toFixed(2)}%`;
 }
 
-function ModelChip({ model, onDelete }: {
-  model: TrainedModelDetails,
-  onDelete: () => void;
-}) {
+function ModelChip({ model, onDelete }: { model: TrainedModelDetails; onDelete: () => void }) {
   return (
     <Chip
       label={getModelLabel(model)}
       size="small"
       onDelete={onDelete}
       sx={{
-        '& .MuiChip-deleteIcon': {
-          fontSize: '18px',
+        "& .MuiChip-deleteIcon": {
+          fontSize: "18px",
         },
-      }} />
+      }}
+    />
   );
 }
 
@@ -186,7 +184,7 @@ function Backtesting() {
                       }}
                     >
                       {model_ids.map((modelId, index) => {
-                        const model = models.find(m => m.model_id === modelId);
+                        const model = models.find((m) => m.model_id === modelId);
                         return (
                           <ToggleButton key={modelId} value={index}>
                             {model ? getModelLabel(model) : `Model ${modelId.substring(0, 8)}...`}
@@ -197,10 +195,7 @@ function Backtesting() {
                   </Box>
 
                   {model_ids.map((modelId, index) => (
-                    <Box 
-                      key={modelId}
-                      sx={{ display: selectedModelIndex === index ? 'block' : 'none' }}
-                    >
+                    <Box key={modelId} sx={{ display: selectedModelIndex === index ? "block" : "none" }}>
                       <Grid container spacing={3}>
                         {/* Returns Distribution Plot */}
                         {plots.returns_distribution?.[modelId] && (
@@ -280,19 +275,19 @@ function Backtesting() {
                   value={selectedModels}
                   onChange={(event) => {
                     const value = event.target.value;
-                    setSelectedModels(typeof value === 'string' ? value.split(',') : value);
+                    setSelectedModels(typeof value === "string" ? value.split(",") : value);
                   }}
                   input={<OutlinedInput label="Select Models" />}
                   renderValue={(selected) => (
-                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                    <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
                       {selected.map((modelId) => {
-                        const model = models.find(m => m.model_id === modelId);
+                        const model = models.find((m) => m.model_id === modelId);
                         return model ? (
                           <ModelChip
                             key={modelId}
                             model={model}
                             onDelete={() => {
-                              setSelectedModels(selectedModels.filter(id => id !== modelId));
+                              setSelectedModels(selectedModels.filter((id) => id !== modelId));
                             }}
                           />
                         ) : null;
@@ -334,7 +329,9 @@ function Backtesting() {
                         return (
                           <Grid size={{ xs: 12, md: 6 }} key={modelId}>
                             <Card variant="outlined" sx={{ p: 2 }}>
-                              <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 1 }}>
+                              <Box
+                                sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 1 }}
+                              >
                                 <Typography variant="subtitle2">{getModelLabel(model)}</Typography>
                                 <Button
                                   variant="outlined"
@@ -348,7 +345,7 @@ function Backtesting() {
                                   Details
                                 </Button>
                               </Box>
-                              <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                              <Box sx={{ display: "flex", justifyContent: "space-between" }}>
                                 <Typography variant="body2" color="text.secondary">
                                   Created: {new Date(model.created_at).toLocaleDateString()}
                                 </Typography>
@@ -449,7 +446,7 @@ function Backtesting() {
                         <TableCell>Metric</TableCell>
                         <TableCell align="right">Buy & Hold</TableCell>
                         {model_ids.map((modelId) => {
-                          const model = models.find(m => m.model_id === modelId);
+                          const model = models.find((m) => m.model_id === modelId);
                           return (
                             <TableCell key={modelId} align="right">
                               {model ? getModelLabel(model) : `Model ${modelId.substring(0, 8)}...`}
@@ -475,7 +472,9 @@ function Backtesting() {
                           <TableCell key={modelId} align="right">
                             <Chip
                               label={formatPercentage(ml_strategies[modelId].total_return)}
-                              color={ml_strategies[modelId].total_return > buy_and_hold.total_return ? "success" : "error"}
+                              color={
+                                ml_strategies[modelId].total_return > buy_and_hold.total_return ? "success" : "error"
+                              }
                               size="small"
                             />
                           </TableCell>
@@ -488,7 +487,9 @@ function Backtesting() {
                           <TableCell key={modelId} align="right">
                             <Chip
                               label={ml_strategies[modelId].sharpe_ratio?.toFixed(3)}
-                              color={ml_strategies[modelId].sharpe_ratio > buy_and_hold.sharpe_ratio ? "success" : "error"}
+                              color={
+                                ml_strategies[modelId].sharpe_ratio > buy_and_hold.sharpe_ratio ? "success" : "error"
+                              }
                               size="small"
                             />
                           </TableCell>
@@ -501,7 +502,9 @@ function Backtesting() {
                           <TableCell key={modelId} align="right">
                             <Chip
                               label={formatPercentage(ml_strategies[modelId].max_drawdown)}
-                              color={ml_strategies[modelId].max_drawdown < buy_and_hold.max_drawdown ? "success" : "error"}
+                              color={
+                                ml_strategies[modelId].max_drawdown < buy_and_hold.max_drawdown ? "success" : "error"
+                              }
                               size="small"
                             />
                           </TableCell>
@@ -548,7 +551,7 @@ function Backtesting() {
           {/* ML Strategies Details */}
           <Grid size={{ xs: 12, md: 6 }}>
             {model_ids.map((modelId) => {
-              const model = models.find(m => m.model_id === modelId);
+              const model = models.find((m) => m.model_id === modelId);
               return (
                 <Accordion key={modelId} sx={{ mb: 1 }}>
                   <AccordionSummary expandIcon={<ExpandMore />}>
@@ -556,32 +559,32 @@ function Backtesting() {
                       {model ? getModelLabel(model) : `Model ${modelId.substring(0, 8)}...`} Details
                     </Typography>
                   </AccordionSummary>
-                <AccordionDetails>
-                  <Table size="small">
-                    <TableBody>
-                      <TableRow>
-                        <TableCell>Total Trades</TableCell>
-                        <TableCell align="right">{ml_strategies[modelId].total_trades}</TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell>Win Rate</TableCell>
-                        <TableCell align="right">{formatPercentage(ml_strategies[modelId].win_rate)}</TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell>Volatility</TableCell>
-                        <TableCell align="right">{formatPercentage(ml_strategies[modelId].volatility)}</TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell>Calmar Ratio</TableCell>
-                        <TableCell align="right">{ml_strategies[modelId].calmar_ratio?.toFixed(3)}</TableCell>
-                      </TableRow>
-                    </TableBody>
-                  </Table>
-                                  </AccordionDetails>
+                  <AccordionDetails>
+                    <Table size="small">
+                      <TableBody>
+                        <TableRow>
+                          <TableCell>Total Trades</TableCell>
+                          <TableCell align="right">{ml_strategies[modelId].total_trades}</TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell>Win Rate</TableCell>
+                          <TableCell align="right">{formatPercentage(ml_strategies[modelId].win_rate)}</TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell>Volatility</TableCell>
+                          <TableCell align="right">{formatPercentage(ml_strategies[modelId].volatility)}</TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell>Calmar Ratio</TableCell>
+                          <TableCell align="right">{ml_strategies[modelId].calmar_ratio?.toFixed(3)}</TableCell>
+                        </TableRow>
+                      </TableBody>
+                    </Table>
+                  </AccordionDetails>
                 </Accordion>
               );
             })}
-            </Grid>
+          </Grid>
         </Grid>
       </Box>
     );
