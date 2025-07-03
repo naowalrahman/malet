@@ -1,7 +1,7 @@
 from fastapi import FastAPI, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, List
 import uvicorn
 import uuid
 from datetime import datetime, timedelta
@@ -34,6 +34,7 @@ app.add_middleware(
 # Global state
 training_jobs = {}
 models = {}
+model_names = {} # Only purpose is to pass to backtest engine
 data_cache = {}
 market_analysis_cache = {}
 
@@ -61,7 +62,7 @@ class TrainingRequest(BaseModel):
 
 class BacktestRequest(BaseModel):
     symbol: str
-    model_id: str
+    model_ids: List[str]
     initial_capital: float = 10000
     start_date: Optional[str] = None
     end_date: Optional[str] = None
@@ -185,7 +186,7 @@ async def train_model_background(job_id: str, request: TrainingRequest):
         if request.start_date and request.end_date:
             data = data_fetcher.fetch_historical_data(request.symbol, request.start_date, request.end_date)
         else:
-            data = data_fetcher.fetch_daily_data(request.symbol, "6mo")  # Get more data for training
+            data = data_fetcher.fetch_daily_data(request.symbol, "6mo")
         
         if data.empty:
             training_jobs[job_id]["status"] = "error"
@@ -237,6 +238,8 @@ async def train_model_background(job_id: str, request: TrainingRequest):
                 "end_date": request.end_date
             }
         }
+        
+        model_names[job_id] = f"{request.symbol} - {request.model_type} ({(100 * training_result['final_metrics']['accuracy']):.1f}%)"
         
     except Exception as e:
         training_jobs[job_id]["status"] = "error"
@@ -348,13 +351,12 @@ async def make_prediction(request: PredictionRequest):
 # Backtesting endpoints
 @app.post("/backtest")
 async def run_backtest(request: BacktestRequest):
-    """Run backtesting comparison"""
+    """Run backtesting comparison with multiple models"""
     try:
-        if request.model_id not in models:
-            raise HTTPException(status_code=404, detail="Model not found")
-        
-        model_info = models[request.model_id]
-        trainer = model_info["trainer"]
+        # Validate all models exist
+        for model_id in request.model_ids:
+            if model_id not in models:
+                raise HTTPException(status_code=404, detail=f"Model {model_id} not found")
         
         # Fetch data for backtesting
         if request.start_date and request.end_date:
@@ -371,9 +373,12 @@ async def run_backtest(request: BacktestRequest):
         data_with_indicators = tech_indicators.calculate_all_indicators(data)
         
         # Run backtesting
-        backtest_engine = BacktestEngine()
+        backtest_engine = BacktestEngine(model_names)
         results = backtest_engine.run_comparison(
-            data_with_indicators, trainer, request.initial_capital
+            data_with_indicators, 
+            [models[model_id]["trainer"] for model_id in request.model_ids],
+            request.model_ids,
+            request.initial_capital
         )
         
         # Generate plots
@@ -381,7 +386,7 @@ async def run_backtest(request: BacktestRequest):
         
         return {
             "symbol": request.symbol,
-            "model_id": request.model_id,
+            "model_ids": request.model_ids,
             "initial_capital": request.initial_capital,
             "results": results,
             "plots": plots

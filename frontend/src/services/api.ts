@@ -97,7 +97,7 @@ export interface Prediction {
 
 export interface BacktestRequest {
   symbol: string;
-  model_id: string;
+  model_ids: string[];
   initial_capital: number;
   start_date?: string;
   end_date?: string;
@@ -105,12 +105,13 @@ export interface BacktestRequest {
 
 export interface BacktestResults {
   symbol: string;
-  model_id: string;
+  model_ids: string[];
   initial_capital: number;
   results: {
     buy_and_hold: any;
-    ml_strategy: any;
-    comparison_metrics: any;
+    ml_strategies: { [key: string]: any };
+    comparison_metrics: { [key: string]: any };
+    model_ids: string[];
   };
   plots: any;
 }

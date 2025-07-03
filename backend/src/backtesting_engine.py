@@ -16,20 +16,7 @@ class TradingStrategy:
     def __init__(self, initial_capital: float = 10000, transaction_cost: float = 0):
         self.initial_capital = initial_capital
         self.transaction_cost = transaction_cost
-        self.positions = []
-        self.trades = []
-        self.portfolio_value = []
         
-    def calculate_position_size(self, current_capital: float, price: float, 
-                              risk_per_trade: float = 0.02) -> int:
-        """
-        Calculate position size based on risk management
-        """
-        max_risk_amount = current_capital * risk_per_trade
-        position_value = current_capital * 0.95  # Use 95% of capital
-        shares = int(position_value / price)
-        return max(1, shares)
-
 class BuyAndHoldStrategy(TradingStrategy):
     """
     Simple buy and hold strategy for comparison
@@ -160,7 +147,7 @@ class MLTradingStrategy(TradingStrategy):
                         
                         if current_capital >= cost + transaction_fee:
                             current_shares = shares_to_buy
-                            current_capital -= (cost + transaction_fee)
+                            current_capital -= cost + transaction_fee
                             transaction_costs += transaction_fee
                             
                             trades.append({
@@ -176,7 +163,7 @@ class MLTradingStrategy(TradingStrategy):
                     revenue = current_shares * current_price
                     transaction_fee = revenue * self.transaction_cost
                     
-                    current_capital += (revenue - transaction_fee)
+                    current_capital += revenue - transaction_fee
                     transaction_costs += transaction_fee
                     
                     trades.append({
@@ -199,7 +186,7 @@ class MLTradingStrategy(TradingStrategy):
                 final_price = aligned_data['Close'].iloc[-1]
                 revenue = current_shares * final_price
                 transaction_fee = revenue * self.transaction_cost
-                current_capital += (revenue - transaction_fee)
+                current_capital += revenue - transaction_fee
                 transaction_costs += transaction_fee
                 current_shares = 0
             
@@ -244,42 +231,55 @@ class BacktestEngine:
     Comprehensive backtesting engine
     """
     
-    def __init__(self):
+    def __init__(self, model_names):
         self.results = {}
+        self.model_names = model_names
         
-    def run_comparison(self, data: pd.DataFrame, ml_model, 
-                      initial_capital: float = 10000) -> Dict:
+    def run_comparison(self, data: pd.DataFrame, ml_models: List, 
+                                 model_ids: List[str], initial_capital: float = 10000) -> Dict:
         """
-        Run comparison between Buy & Hold and ML strategy
+        Run comparison between Buy & Hold and multiple ML strategies
         """
-        # First get ML predictions to determine the aligned period
-        ml_strategy = MLTradingStrategy(ml_model, initial_capital)
-        ml_results = ml_strategy.backtest(data)
         
-        # Determine the aligned data period based on ML predictions
-        if ml_results.get('predictions'):
-            predictions_length = len(ml_results['predictions'])
-            start_idx = len(data) - predictions_length
-            aligned_data = data.iloc[start_idx:].copy()
-        else:
-            aligned_data = data
+        # Store results for each model
+        ml_results = {}
+        all_ml_strategies = {}
         
-        # Buy and Hold strategy using aligned data
+        start_idx = 0
+
+        for i, (ml_model, model_id) in enumerate(zip(ml_models, model_ids)):
+            ml_strategy = MLTradingStrategy(ml_model, initial_capital)
+            ml_result = ml_strategy.backtest(data)
+            ml_metrics = self.calculate_metrics(ml_result, data)
+
+            if ml_result.get('predictions'):
+                predictions_length = len(ml_result['predictions'])
+                start_idx = max(start_idx, len(data) - predictions_length)
+            
+            ml_results[model_id] = {**ml_result, **ml_metrics}
+            all_ml_strategies[model_id] = ml_result
+
+        aligned_data = data.iloc[start_idx:].copy()
+
+        # Run Buy and Hold strategy once on aligned data
         bh_strategy = BuyAndHoldStrategy(initial_capital)
         bh_results = bh_strategy.backtest(aligned_data)
-        
-        # Calculate additional metrics using aligned data
         bh_metrics = self.calculate_metrics(bh_results, aligned_data)
-        ml_metrics = self.calculate_metrics(ml_results, aligned_data)
         
-        comparison = {
+        # Create comparison metrics for each model vs buy and hold
+        comparison_metrics = {}
+        for model_id in model_ids:
+            comparison_metrics[model_id] = self.compare_strategies(bh_results, ml_results[model_id])
+        
+        multi_comparison = {
             'buy_and_hold': {**bh_results, **bh_metrics},
-            'ml_strategy': {**ml_results, **ml_metrics},
-            'comparison_metrics': self.compare_strategies(bh_results, ml_results)
+            'ml_strategies': ml_results,
+            'comparison_metrics': comparison_metrics,
+            'model_ids': model_ids
         }
         
-        self.results = comparison
-        return comparison
+        self.results = multi_comparison
+        return multi_comparison
     
     def calculate_metrics(self, results: Dict, data: pd.DataFrame) -> Dict:
         """
@@ -306,7 +306,7 @@ class BacktestEngine:
         # Maximum drawdown
         peak = np.maximum.accumulate(portfolio_values)
         drawdown = (portfolio_values - peak) / peak
-        max_drawdown = np.min(drawdown)
+        max_drawdown = abs(np.min(drawdown))
         
         # Win rate (for ML strategy)
         win_rate = 0
@@ -340,7 +340,7 @@ class BacktestEngine:
             avg_loss = total_loss / loss_count if loss_count > 0 else 0
         
         # Calmar ratio
-        calmar_ratio = (results['total_return'] / abs(max_drawdown)) if max_drawdown != 0 else 0
+        calmar_ratio = (results['total_return'] / max_drawdown) if max_drawdown != 0 else 0
         
         # Sortino ratio
         negative_returns = returns[returns < 0]
@@ -386,75 +386,98 @@ class BacktestEngine:
     
     def generate_plots(self) -> Dict:
         """
-        Generate visualization plots
+        Generate plots for multiple model comparison
         """
         if not self.results:
-            return {}
-        
+            raise ValueError("No backtesting results found; run_comparison must be called first")
+
         plots = {}
         
-        # Portfolio value comparison
+        # Portfolio value comparison (all models together)
         plots['portfolio_comparison'] = self.plot_portfolio_comparison()
         
-        # Returns distribution
-        plots['returns_distribution'] = self.plot_returns_distribution()
+        # Individual model plots
+        model_ids = self.results['model_ids']
         
-        # Drawdown analysis
-        plots['drawdown_analysis'] = self.plot_drawdown_analysis()
+        # Returns distribution for each model
+        plots['returns_distribution'] = {}
+        for model_id in model_ids:
+            plots['returns_distribution'][model_id] = self.plot_returns_distribution(model_id)
         
-        # Trade analysis (for ML strategy)
-        if self.results['ml_strategy'].get('trades'):
-            plots['trade_analysis'] = self.plot_trade_analysis()
+        # Drawdown analysis for each model
+        plots['drawdown_analysis'] = {}
+        for model_id in model_ids:
+            plots['drawdown_analysis'][model_id] = self.plot_drawdown_analysis(model_id)
+        
+        # Trade analysis for each model
+        plots['trade_analysis'] = {}
+        for model_id in model_ids:
+            if self.results['ml_strategies'][model_id].get('trades'):
+                plots['trade_analysis'][model_id] = self.plot_trade_analysis(model_id)
         
         return plots
     
     def plot_portfolio_comparison(self):
         """
-        Create portfolio value comparison plot
+        Create portfolio value comparison plot for multiple models
         """
         try:
             bh_values = self.results['buy_and_hold']['portfolio_values']
-            ml_values = self.results['ml_strategy']['portfolio_values']
             
-            if len(bh_values) == 0 or len(ml_values) == 0:
+            if len(bh_values) == 0:
                 return None
             
             fig = go.Figure()
             
+            # Add Buy & Hold trace
             fig.add_trace(go.Scatter(
                 y=bh_values,
                 mode='lines',
                 name='Buy & Hold',
-                line=dict(color='blue')
+                line=dict(color='blue', width=2)
             ))
             
-            fig.add_trace(go.Scatter(
-                y=ml_values,
-                mode='lines',
-                name='ML Strategy',
-                line=dict(color='red')
-            ))
+            # Add traces for each ML model
+            colors = ['red', 'green', 'orange', 'purple', 'brown', 'pink', 'gray', 'olive', 'cyan']
+            
+            for i, model_id in enumerate(self.results['model_ids']):
+                ml_values = self.results['ml_strategies'][model_id]['portfolio_values']
+                if len(ml_values) > 0:
+                    color = colors[i % len(colors)]
+                    fig.add_trace(go.Scatter(
+                        y=ml_values,
+                        mode='lines',
+                        name=self.model_names[model_id],
+                        line=dict(color=color, width=2)
+                    ))
             
             fig.update_layout(
                 title='Portfolio Value Comparison',
                 xaxis_title='Time',
                 yaxis_title='Portfolio Value ($)',
-                hovermode='x unified'
+                hovermode='x unified',
+                legend=dict(
+                    orientation="h",
+                    yanchor="bottom",
+                    y=1.02,
+                    xanchor="right",
+                    x=1
+                )
             )
             
             return fig.to_json()
             
         except Exception as e:
-            print(f"Error creating portfolio comparison plot: {str(e)}")
+            print(f"Error creating multi-model portfolio comparison plot: {str(e)}")
             return None
     
-    def plot_returns_distribution(self):
+    def plot_returns_distribution(self, model_id: str):
         """
-        Create returns distribution plot
+        Create returns distribution plot for a specific model
         """
         try:
             bh_values = np.array(self.results['buy_and_hold']['portfolio_values'])
-            ml_values = np.array(self.results['ml_strategy']['portfolio_values'])
+            ml_values = np.array(self.results['ml_strategies'][model_id]['portfolio_values'])
             
             if len(bh_values) <= 1 or len(ml_values) <= 1:
                 return None
@@ -473,13 +496,13 @@ class BacktestEngine:
             
             fig.add_trace(go.Histogram(
                 x=ml_returns,
-                name='ML Strategy',
+                name=self.model_names[model_id],
                 opacity=0.7,
                 nbinsx=50
             ))
             
             fig.update_layout(
-                title='Returns Distribution',
+                title=f'Returns Distribution - {self.model_names[model_id]}',
                 xaxis_title='Returns',
                 yaxis_title='Frequency',
                 barmode='overlay'
@@ -488,16 +511,16 @@ class BacktestEngine:
             return fig.to_json()
             
         except Exception as e:
-            print(f"Error creating returns distribution plot: {str(e)}")
+            print(f"Error creating returns distribution plot for model {model_id}: {str(e)}")
             return None
     
-    def plot_drawdown_analysis(self):
+    def plot_drawdown_analysis(self, model_id: str):
         """
-        Create drawdown analysis plot
+        Create drawdown analysis plot for a specific model
         """
         try:
             bh_values = np.array(self.results['buy_and_hold']['portfolio_values'])
-            ml_values = np.array(self.results['ml_strategy']['portfolio_values'])
+            ml_values = np.array(self.results['ml_strategies'][model_id]['portfolio_values'])
             
             if len(bh_values) == 0 or len(ml_values) == 0:
                 return None
@@ -514,7 +537,7 @@ class BacktestEngine:
             fig.add_trace(go.Scatter(
                 y=bh_drawdown,
                 mode='lines',
-                name='Buy & Hold Drawdown',
+                name='Buy & Hold',
                 fill='tonexty',
                 line=dict(color='blue')
             ))
@@ -522,13 +545,13 @@ class BacktestEngine:
             fig.add_trace(go.Scatter(
                 y=ml_drawdown,
                 mode='lines',
-                name='ML Strategy Drawdown',
+                name=f'{self.model_names[model_id]}',
                 fill='tonexty',
                 line=dict(color='red')
             ))
             
             fig.update_layout(
-                title='Drawdown Analysis',
+                title=f'Drawdown Analysis - {self.model_names[model_id]}',
                 xaxis_title='Time',
                 yaxis_title='Drawdown (%)',
                 hovermode='x unified'
@@ -537,15 +560,15 @@ class BacktestEngine:
             return fig.to_json()
             
         except Exception as e:
-            print(f"Error creating drawdown analysis plot: {str(e)}")
+            print(f"Error creating drawdown analysis plot for model {model_id}: {str(e)}")
             return None
     
-    def plot_trade_analysis(self):
+    def plot_trade_analysis(self, model_id: str):
         """
-        Create trade analysis plot
+        Create trade analysis plot for a specific model
         """
         try:
-            trades = self.results['ml_strategy']['trades']
+            trades = self.results['ml_strategies'][model_id]['trades']
             
             if not trades:
                 return None
@@ -574,7 +597,7 @@ class BacktestEngine:
                 ))
             
             fig.update_layout(
-                title='Trading Signals',
+                title=f'Trading Signals - {self.model_names[model_id]}',
                 xaxis_title='Time',
                 yaxis_title='Price ($)',
                 hovermode='closest'
@@ -583,5 +606,5 @@ class BacktestEngine:
             return fig.to_json()
             
         except Exception as e:
-            print(f"Error creating trade analysis plot: {str(e)}")
+            print(f"Error creating trade analysis plot for model {model_id}: {str(e)}")
             return None

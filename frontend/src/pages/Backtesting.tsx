@@ -25,16 +25,53 @@ import {
   Accordion,
   AccordionSummary,
   AccordionDetails,
+  Checkbox,
+  ListItemText,
+  OutlinedInput,
+  ToggleButton,
+  ToggleButtonGroup,
 } from "@mui/material";
-import { PlayArrow, TrendingUp, TrendingDown, ExpandMore, Info } from "@mui/icons-material";
+import { PlayArrow, ExpandMore, Info } from "@mui/icons-material";
 import { apiService } from "../services/api";
 import ModernPlot from "../components/ModernPlot";
 import ModelDetailsDialog from "../components/ModelDetailsDialog";
 import type { TrainedModelDetails, BacktestRequest, BacktestResults } from "../services/api";
 
+function getModelLabel(model: TrainedModelDetails): string {
+  return `${model.symbol} - ${model.model_type.toUpperCase()} (${(model.accuracy * 100).toFixed(1)}%)`;
+}
+
+function formatCurrency(value: number): string {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+  }).format(value);
+}
+
+function formatPercentage(value: number): string {
+  return `${(value * 100).toFixed(2)}%`;
+}
+
+function ModelChip({ model, onDelete }: {
+  model: TrainedModelDetails,
+  onDelete: () => void;
+}) {
+  return (
+    <Chip
+      label={getModelLabel(model)}
+      size="small"
+      onDelete={onDelete}
+      sx={{
+        '& .MuiChip-deleteIcon': {
+          fontSize: '18px',
+        },
+      }} />
+  );
+}
+
 function Backtesting() {
   const [symbol, setSymbol] = useState("SPY");
-  const [selectedModel, setSelectedModel] = useState("");
+  const [selectedModels, setSelectedModels] = useState<string[]>([]);
   const [initialCapital, setInitialCapital] = useState(10000);
   const [startDate, setStartDate] = useState("2020-01-01");
   const [endDate, setEndDate] = useState("2025-01-01");
@@ -44,6 +81,7 @@ function Backtesting() {
   const [error, setError] = useState<string | null>(null);
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
   const [selectedModelForDetails, setSelectedModelForDetails] = useState<TrainedModelDetails | null>(null);
+  const [selectedModelIndex, setSelectedModelIndex] = useState(0);
 
   useEffect(() => {
     fetchModels();
@@ -59,8 +97,8 @@ function Backtesting() {
   }
 
   async function runBacktest() {
-    if (!selectedModel) {
-      setError("Please select a model");
+    if (selectedModels.length === 0) {
+      setError("Please select at least one model");
       return;
     }
 
@@ -70,7 +108,7 @@ function Backtesting() {
     try {
       const request: BacktestRequest = {
         symbol,
-        model_id: selectedModel,
+        model_ids: selectedModels,
         initial_capital: initialCapital,
         start_date: startDate,
         end_date: endDate,
@@ -85,21 +123,11 @@ function Backtesting() {
     }
   }
 
-  function formatCurrency(value: number) {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-    }).format(value);
-  }
-
-  function formatPercentage(value: number) {
-    return `${(value * 100).toFixed(2)}%`;
-  }
-
   function renderPlots() {
     if (!results?.plots) return null;
 
     const plots = results.plots;
+    const { model_ids } = results.results;
 
     return (
       <Box sx={{ mt: 3 }}>
@@ -121,43 +149,103 @@ function Backtesting() {
             </Grid>
           )}
 
-          {/* Returns Distribution Plot */}
-          {plots.returns_distribution && (
-            <Grid size={{ xs: 12, md: 6 }}>
-              <ModernPlot
-                data={JSON.parse(plots.returns_distribution).data}
-                layout={JSON.parse(plots.returns_distribution).layout}
-                title="Returns Distribution"
-                height={370}
-                accentColor="#10b981"
-              />
-            </Grid>
-          )}
-
-          {/* Drawdown Analysis Plot */}
-          {plots.drawdown_analysis && (
-            <Grid size={{ xs: 12, md: 6 }}>
-              <ModernPlot
-                data={JSON.parse(plots.drawdown_analysis).data}
-                layout={JSON.parse(plots.drawdown_analysis).layout}
-                title="Drawdown Analysis"
-                height={370}
-                accentColor="#ef4444"
-                legendPosition="bottom-left"
-              />
-            </Grid>
-          )}
-
-          {/* Trade Analysis Plot */}
-          {plots.trade_analysis && (
+          {/* Individual Model Analysis with Toggle Buttons */}
+          {model_ids && model_ids.length > 0 && (
             <Grid size={{ xs: 12 }}>
-              <ModernPlot
-                data={JSON.parse(plots.trade_analysis).data}
-                layout={JSON.parse(plots.trade_analysis).layout}
-                title="Trading Signals & Price Action"
-                height={420}
-                accentColor="#f59e0b"
-              />
+              <Card>
+                <CardContent>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      mb: 3,
+                      flexWrap: "wrap",
+                      gap: 2,
+                    }}
+                  >
+                    <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                      Individual Model Analysis
+                    </Typography>
+                    <ToggleButtonGroup
+                      value={selectedModelIndex}
+                      exclusive
+                      onChange={(_, newValue) => {
+                        if (newValue !== null) {
+                          setSelectedModelIndex(newValue);
+                        }
+                      }}
+                      size="small"
+                      sx={{
+                        "& .MuiToggleButton-root": {
+                          px: 2,
+                          py: 0.5,
+                          fontSize: "0.875rem",
+                          fontWeight: 600,
+                        },
+                      }}
+                    >
+                      {model_ids.map((modelId, index) => {
+                        const model = models.find(m => m.model_id === modelId);
+                        return (
+                          <ToggleButton key={modelId} value={index}>
+                            {model ? getModelLabel(model) : `Model ${modelId.substring(0, 8)}...`}
+                          </ToggleButton>
+                        );
+                      })}
+                    </ToggleButtonGroup>
+                  </Box>
+
+                  {model_ids.map((modelId, index) => (
+                    <Box 
+                      key={modelId}
+                      sx={{ display: selectedModelIndex === index ? 'block' : 'none' }}
+                    >
+                      <Grid container spacing={3}>
+                        {/* Returns Distribution Plot */}
+                        {plots.returns_distribution?.[modelId] && (
+                          <Grid size={{ xs: 12, md: 6 }}>
+                            <ModernPlot
+                              data={JSON.parse(plots.returns_distribution[modelId]).data}
+                              layout={JSON.parse(plots.returns_distribution[modelId]).layout}
+                              title="Returns Distribution"
+                              height={370}
+                              accentColor="#10b981"
+                            />
+                          </Grid>
+                        )}
+
+                        {/* Drawdown Analysis Plot */}
+                        {plots.drawdown_analysis?.[modelId] && (
+                          <Grid size={{ xs: 12, md: 6 }}>
+                            <ModernPlot
+                              data={JSON.parse(plots.drawdown_analysis[modelId]).data}
+                              layout={JSON.parse(plots.drawdown_analysis[modelId]).layout}
+                              title="Drawdown Analysis"
+                              height={370}
+                              accentColor="#ef4444"
+                              legendPosition="bottom-left"
+                            />
+                          </Grid>
+                        )}
+
+                        {/* Trade Analysis Plot */}
+                        {plots.trade_analysis?.[modelId] && (
+                          <Grid size={{ xs: 12 }}>
+                            <ModernPlot
+                              data={JSON.parse(plots.trade_analysis[modelId]).data}
+                              layout={JSON.parse(plots.trade_analysis[modelId]).layout}
+                              title="Trading Signals & Price Action"
+                              height={420}
+                              accentColor="#f59e0b"
+                            />
+                          </Grid>
+                        )}
+                      </Grid>
+                    </Box>
+                  ))}
+                </CardContent>
+              </Card>
             </Grid>
           )}
         </Grid>
@@ -167,7 +255,7 @@ function Backtesting() {
 
   function renderConfiguration() {
     return (
-      <Card sx={{ minHeight: selectedModel ? 350 : 250 }}>
+      <Card sx={{ minHeight: selectedModels.length > 0 ? 350 : 250 }}>
         <CardContent>
           <Typography variant="h6" gutterBottom>
             Backtest Configuration
@@ -186,72 +274,90 @@ function Backtesting() {
 
             <Grid size={{ xs: 12, md: 6 }}>
               <FormControl fullWidth>
-                <InputLabel>Model</InputLabel>
-                <Select value={selectedModel} onChange={(e) => setSelectedModel(e.target.value)} label="Model">
+                <InputLabel>Select Models</InputLabel>
+                <Select
+                  multiple
+                  value={selectedModels}
+                  onChange={(event) => {
+                    const value = event.target.value;
+                    setSelectedModels(typeof value === 'string' ? value.split(',') : value);
+                  }}
+                  input={<OutlinedInput label="Select Models" />}
+                  renderValue={(selected) => (
+                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                      {selected.map((modelId) => {
+                        const model = models.find(m => m.model_id === modelId);
+                        return model ? (
+                          <ModelChip
+                            key={modelId}
+                            model={model}
+                            onDelete={() => {
+                              setSelectedModels(selectedModels.filter(id => id !== modelId));
+                            }}
+                          />
+                        ) : null;
+                      })}
+                    </Box>
+                  )}
+                  MenuProps={{
+                    PaperProps: {
+                      style: {
+                        maxHeight: 300,
+                        width: 350,
+                      },
+                    },
+                  }}
+                >
                   {models.map((model) => (
                     <MenuItem key={model.model_id} value={model.model_id}>
-                      {model.symbol} - {model.model_type} (Accuracy: {formatPercentage(model.accuracy)})
+                      <Checkbox checked={selectedModels.indexOf(model.model_id) > -1} />
+                      <ListItemText primary={getModelLabel(model)} />
                     </MenuItem>
                   ))}
                 </Select>
               </FormControl>
             </Grid>
 
-            {/* Selected Model Details */}
-            {selectedModel && (
+            {/* Selected Models Details */}
+            {selectedModels.length > 0 && (
               <Grid size={{ xs: 12 }}>
                 <Card variant="outlined" sx={{ mt: 2 }}>
                   <CardContent>
-                    <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
-                      <Typography variant="h6">Selected Model Details</Typography>
-                      <Button
-                        variant="outlined"
-                        startIcon={<Info />}
-                        onClick={() => {
-                          const model = models.find((m) => m.model_id === selectedModel);
-                          if (model) {
-                            setSelectedModelForDetails(model);
-                            setDetailsDialogOpen(true);
-                          }
-                        }}
-                        size="small"
-                      >
-                        View Full Details
-                      </Button>
-                    </Box>
-                    {(() => {
-                      const model = models.find((m) => m.model_id === selectedModel);
-                      if (!model) return null;
+                    <Typography variant="h6" gutterBottom>
+                      Selected Models ({selectedModels.length})
+                    </Typography>
+                    <Grid container spacing={2}>
+                      {selectedModels.map((modelId) => {
+                        const model = models.find((m) => m.model_id === modelId);
+                        if (!model) return null;
 
-                      return (
-                        <Grid container spacing={2}>
-                          <Grid size={{ xs: 6, sm: 3 }}>
-                            <Typography variant="body2" color="text.secondary">
-                              Symbol
-                            </Typography>
-                            <Typography variant="body1">{model.symbol}</Typography>
+                        return (
+                          <Grid size={{ xs: 12, md: 6 }} key={modelId}>
+                            <Card variant="outlined" sx={{ p: 2 }}>
+                              <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 1 }}>
+                                <Typography variant="subtitle2">{getModelLabel(model)}</Typography>
+                                <Button
+                                  variant="outlined"
+                                  startIcon={<Info />}
+                                  onClick={() => {
+                                    setSelectedModelForDetails(model);
+                                    setDetailsDialogOpen(true);
+                                  }}
+                                  size="small"
+                                >
+                                  Details
+                                </Button>
+                              </Box>
+                              <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                                <Typography variant="body2" color="text.secondary">
+                                  Created: {new Date(model.created_at).toLocaleDateString()}
+                                </Typography>
+                              </Box>
+                            </Card>
                           </Grid>
-                          <Grid size={{ xs: 6, sm: 3 }}>
-                            <Typography variant="body2" color="text.secondary">
-                              Model Type
-                            </Typography>
-                            <Typography variant="body1">{model.model_type.toUpperCase()}</Typography>
-                          </Grid>
-                          <Grid size={{ xs: 6, sm: 3 }}>
-                            <Typography variant="body2" color="text.secondary">
-                              Accuracy
-                            </Typography>
-                            <Chip label={formatPercentage(model.accuracy)} color="primary" size="small" />
-                          </Grid>
-                          <Grid size={{ xs: 6, sm: 3 }}>
-                            <Typography variant="body2" color="text.secondary">
-                              Created
-                            </Typography>
-                            <Typography variant="body2">{new Date(model.created_at).toLocaleDateString()}</Typography>
-                          </Grid>
-                        </Grid>
-                      );
-                    })()}
+                        );
+                      })}
+                    </Grid>
                   </CardContent>
                 </Card>
               </Grid>
@@ -303,7 +409,7 @@ function Backtesting() {
               variant="contained"
               startIcon={<PlayArrow />}
               onClick={runBacktest}
-              disabled={isRunning || !selectedModel}
+              disabled={isRunning || selectedModels.length === 0}
               fullWidth
             >
               {isRunning ? "Running Backtest..." : "Run Backtest"}
@@ -323,7 +429,7 @@ function Backtesting() {
   function renderResults() {
     if (!results) return null;
 
-    const { buy_and_hold, ml_strategy } = results.results;
+    const { buy_and_hold, ml_strategies, model_ids } = results.results;
 
     return (
       <Box sx={{ mt: 3 }}>
@@ -342,70 +448,64 @@ function Backtesting() {
                       <TableRow>
                         <TableCell>Metric</TableCell>
                         <TableCell align="right">Buy & Hold</TableCell>
-                        <TableCell align="right">ML Strategy</TableCell>
-                        <TableCell align="right">Difference</TableCell>
+                        {model_ids.map((modelId) => {
+                          const model = models.find(m => m.model_id === modelId);
+                          return (
+                            <TableCell key={modelId} align="right">
+                              {model ? getModelLabel(model) : `Model ${modelId.substring(0, 8)}...`}
+                            </TableCell>
+                          );
+                        })}
                       </TableRow>
                     </TableHead>
                     <TableBody>
                       <TableRow>
                         <TableCell>Final Value</TableCell>
                         <TableCell align="right">{formatCurrency(buy_and_hold.final_value)}</TableCell>
-                        <TableCell align="right">{formatCurrency(ml_strategy.final_value)}</TableCell>
-                        <TableCell align="right">
-                          <Box display="flex" alignItems="center" justifyContent="flex-end">
-                            {ml_strategy.final_value > buy_and_hold.final_value ? (
-                              <>
-                                <TrendingUp color="success" />
-                                <Typography color="success.main">
-                                  {formatCurrency(ml_strategy.final_value - buy_and_hold.final_value)}
-                                </Typography>
-                              </>
-                            ) : (
-                              <>
-                                <TrendingDown color="error" />
-                                <Typography color="error.main">
-                                  {formatCurrency(ml_strategy.final_value - buy_and_hold.final_value)}
-                                </Typography>
-                              </>
-                            )}
-                          </Box>
-                        </TableCell>
+                        {model_ids.map((modelId) => (
+                          <TableCell key={modelId} align="right">
+                            {formatCurrency(ml_strategies[modelId].final_value)}
+                          </TableCell>
+                        ))}
                       </TableRow>
                       <TableRow>
                         <TableCell>Total Return</TableCell>
                         <TableCell align="right">{formatPercentage(buy_and_hold.total_return)}</TableCell>
-                        <TableCell align="right">{formatPercentage(ml_strategy.total_return)}</TableCell>
-                        <TableCell align="right">
-                          <Chip
-                            label={formatPercentage(ml_strategy.total_return - buy_and_hold.total_return)}
-                            color={ml_strategy.total_return > buy_and_hold.total_return ? "success" : "error"}
-                            size="small"
-                          />
-                        </TableCell>
+                        {model_ids.map((modelId) => (
+                          <TableCell key={modelId} align="right">
+                            <Chip
+                              label={formatPercentage(ml_strategies[modelId].total_return)}
+                              color={ml_strategies[modelId].total_return > buy_and_hold.total_return ? "success" : "error"}
+                              size="small"
+                            />
+                          </TableCell>
+                        ))}
                       </TableRow>
                       <TableRow>
                         <TableCell>Sharpe Ratio</TableCell>
                         <TableCell align="right">{buy_and_hold.sharpe_ratio?.toFixed(3)}</TableCell>
-                        <TableCell align="right">{ml_strategy.sharpe_ratio?.toFixed(3)}</TableCell>
-                        <TableCell align="right">
-                          <Chip
-                            label={(ml_strategy.sharpe_ratio - buy_and_hold.sharpe_ratio).toFixed(3)}
-                            color={ml_strategy.sharpe_ratio > buy_and_hold.sharpe_ratio ? "success" : "error"}
-                            size="small"
-                          />
-                        </TableCell>
+                        {model_ids.map((modelId) => (
+                          <TableCell key={modelId} align="right">
+                            <Chip
+                              label={ml_strategies[modelId].sharpe_ratio?.toFixed(3)}
+                              color={ml_strategies[modelId].sharpe_ratio > buy_and_hold.sharpe_ratio ? "success" : "error"}
+                              size="small"
+                            />
+                          </TableCell>
+                        ))}
                       </TableRow>
                       <TableRow>
                         <TableCell>Max Drawdown</TableCell>
                         <TableCell align="right">{formatPercentage(buy_and_hold.max_drawdown)}</TableCell>
-                        <TableCell align="right">{formatPercentage(ml_strategy.max_drawdown)}</TableCell>
-                        <TableCell align="right">
-                          <Chip
-                            label={formatPercentage(ml_strategy.max_drawdown - buy_and_hold.max_drawdown)}
-                            color={ml_strategy.max_drawdown < buy_and_hold.max_drawdown ? "success" : "error"}
-                            size="small"
-                          />
-                        </TableCell>
+                        {model_ids.map((modelId) => (
+                          <TableCell key={modelId} align="right">
+                            <Chip
+                              label={formatPercentage(ml_strategies[modelId].max_drawdown)}
+                              color={ml_strategies[modelId].max_drawdown < buy_and_hold.max_drawdown ? "success" : "error"}
+                              size="small"
+                            />
+                          </TableCell>
+                        ))}
                       </TableRow>
                     </TableBody>
                   </Table>
@@ -445,35 +545,43 @@ function Backtesting() {
             </Accordion>
           </Grid>
 
+          {/* ML Strategies Details */}
           <Grid size={{ xs: 12, md: 6 }}>
-            <Accordion>
-              <AccordionSummary expandIcon={<ExpandMore />}>
-                <Typography variant="h6">ML Strategy Details</Typography>
-              </AccordionSummary>
-              <AccordionDetails>
-                <Table size="small">
-                  <TableBody>
-                    <TableRow>
-                      <TableCell>Total Trades</TableCell>
-                      <TableCell align="right">{ml_strategy.total_trades}</TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell>Win Rate</TableCell>
-                      <TableCell align="right">{formatPercentage(ml_strategy.win_rate)}</TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell>Volatility</TableCell>
-                      <TableCell align="right">{formatPercentage(ml_strategy.volatility)}</TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell>Calmar Ratio</TableCell>
-                      <TableCell align="right">{ml_strategy.calmar_ratio?.toFixed(3)}</TableCell>
-                    </TableRow>
-                  </TableBody>
-                </Table>
-              </AccordionDetails>
-            </Accordion>
-          </Grid>
+            {model_ids.map((modelId) => {
+              const model = models.find(m => m.model_id === modelId);
+              return (
+                <Accordion key={modelId} sx={{ mb: 1 }}>
+                  <AccordionSummary expandIcon={<ExpandMore />}>
+                    <Typography variant="h6">
+                      {model ? getModelLabel(model) : `Model ${modelId.substring(0, 8)}...`} Details
+                    </Typography>
+                  </AccordionSummary>
+                <AccordionDetails>
+                  <Table size="small">
+                    <TableBody>
+                      <TableRow>
+                        <TableCell>Total Trades</TableCell>
+                        <TableCell align="right">{ml_strategies[modelId].total_trades}</TableCell>
+                      </TableRow>
+                      <TableRow>
+                        <TableCell>Win Rate</TableCell>
+                        <TableCell align="right">{formatPercentage(ml_strategies[modelId].win_rate)}</TableCell>
+                      </TableRow>
+                      <TableRow>
+                        <TableCell>Volatility</TableCell>
+                        <TableCell align="right">{formatPercentage(ml_strategies[modelId].volatility)}</TableCell>
+                      </TableRow>
+                      <TableRow>
+                        <TableCell>Calmar Ratio</TableCell>
+                        <TableCell align="right">{ml_strategies[modelId].calmar_ratio?.toFixed(3)}</TableCell>
+                      </TableRow>
+                    </TableBody>
+                  </Table>
+                                  </AccordionDetails>
+                </Accordion>
+              );
+            })}
+            </Grid>
         </Grid>
       </Box>
     );

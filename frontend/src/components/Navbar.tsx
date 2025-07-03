@@ -5,6 +5,7 @@ import {
   ModelTraining as TrainingIcon,
   Assessment as BacktestIcon,
   MoreVert as MoreIcon,
+  GitHub as GitHubIcon,
 } from "@mui/icons-material";
 import { useNavigate, useLocation } from "react-router-dom";
 
@@ -156,52 +157,20 @@ function Navbar() {
           </Menu>
         </Box>
 
-        {/* Status Indicator */}
-        <Box
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            ml: 2,
-            px: 2,
-            py: 0.75,
-            borderRadius: 2.5,
-            backgroundColor: "rgba(16, 185, 129, 0.1)",
-            border: "1px solid rgba(16, 185, 129, 0.2)",
-            transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
-            "&:hover": {
-              backgroundColor: "rgba(16, 185, 129, 0.15)",
-              transform: "translateY(-1px)",
-              boxShadow: "0 2px 8px 0 rgba(16, 185, 129, 0.2)",
-            },
-          }}
-        >
-          <Box
+          <Button
+            variant="outlined"
+            color="inherit"
+            href="https://github.com/naowalrahman/malet"
+            target="_blank"
             sx={{
-              width: 8,
-              height: 8,
-              borderRadius: "50%",
-              backgroundColor: "#10b981",
-              mr: 1,
-              animation: "pulse 2s infinite",
-              "@keyframes pulse": {
-                "0%": { opacity: 1, transform: "scale(1)" },
-                "50%": { opacity: 0.7, transform: "scale(1.1)" },
-                "100%": { opacity: 1, transform: "scale(1)" },
-              },
-            }}
-          />
-          <Typography
-            variant="caption"
-            sx={{
-              color: "#10b981",
-              fontWeight: 600,
-              fontSize: "0.8125rem",
-              letterSpacing: "0.02em",
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              ml: 2,
             }}
           >
-            Live
-          </Typography>
-        </Box>
+            <GitHubIcon />
+          </Button>
       </Toolbar>
     </AppBar>
   );
