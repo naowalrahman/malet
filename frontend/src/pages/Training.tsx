@@ -520,7 +520,7 @@ function ModelTraining() {
           </Grid>
 
           <Grid size={{ xs: 12, lg: 4 }}>
-            <Card sx={{ minWidth: 350 }}>
+            <Card sx={{ minWidth: 350, bgcolor: "rgba(25, 118, 210, 0.1)" }}>
               <CardContent>
                 <Typography variant="h6" gutterBottom>
                   Trained Models

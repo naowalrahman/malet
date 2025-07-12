@@ -252,7 +252,7 @@ function Backtesting() {
     return (
       <Card sx={{ minHeight: selectedModels.length > 0 ? 350 : 250 }}>
         <CardContent>
-          <Typography variant="h6" gutterBottom>
+          <Typography variant="h6" gutterBottom sx={{ mb: 2 }}>
             Backtest Configuration
           </Typography>
 
@@ -315,9 +315,7 @@ function Backtesting() {
 
             {/* Selected Models Details */}
             {selectedModels.length > 0 && (
-              <Grid size={{ xs: 12 }}>
-                <Card variant="outlined" sx={{ mt: 2 }}>
-                  <CardContent>
+              <Grid size={{ xs: 12 }} sx={{ mb: 2 }}>
                     <Typography variant="h6" gutterBottom>
                       Selected Models ({selectedModels.length})
                     </Typography>
@@ -328,7 +326,7 @@ function Backtesting() {
 
                         return (
                           <Grid size={{ xs: 12, md: 6 }} key={modelId}>
-                            <Card variant="outlined" sx={{ p: 2 }}>
+                            <Card variant="outlined" sx={{ p: 2, bgcolor: "rgba(25, 118, 210, 0.1)" }}>
                               <Box
                                 sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 1 }}
                               >
@@ -355,8 +353,6 @@ function Backtesting() {
                         );
                       })}
                     </Grid>
-                  </CardContent>
-                </Card>
               </Grid>
             )}
 
