@@ -14,6 +14,7 @@ import {
   Grid,
   ToggleButton,
   ToggleButtonGroup,
+  Divider,
 } from "@mui/material";
 import {
   TrendingUp,
@@ -22,13 +23,14 @@ import {
   ModelTraining,
   Refresh,
   Psychology,
-  AccountBalance,
   Timeline,
+  QuestionMarkRounded,
 } from "@mui/icons-material";
 import { useTheme } from "@mui/material/styles";
 import { useNavigate } from "react-router-dom";
 import { apiService } from "../services/api";
 import type { ModelDetails, MarketAnalysis } from "../services/api";
+import AIAnalysis from "../components/AIAnalysis";
 
 interface MetricCardProps {
   title: string;
@@ -204,8 +206,8 @@ function Dashboard() {
       )}
 
       {/* Key Metrics */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+      <Grid container spacing={3} sx={{ mb: 4, justifyContent: "center" }}>
+        <Grid size={{ xs: 12, sm: 6, md: 4 }}>
           <MetricCard
             title="Active Models"
             value={activeModels.length}
@@ -213,7 +215,7 @@ function Dashboard() {
             color="primary"
           />
         </Grid>
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+        <Grid size={{ xs: 12, sm: 6, md: 4 }}>
           <MetricCard
             title="Avg Accuracy"
             value={`${(avgAccuracy * 100).toFixed(1)}%`}
@@ -221,7 +223,7 @@ function Dashboard() {
             color="success"
           />
         </Grid>
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+        <Grid size={{ xs: 12, sm: 6, md: 4 }}>
           <MetricCard
             title={`${selectedSymbol} Price`}
             value={selectedAnalysis ? `$${selectedAnalysis.current_price.toFixed(2)}` : "$0.00"}
@@ -230,21 +232,12 @@ function Dashboard() {
             color="info"
           />
         </Grid>
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <MetricCard
-            title="Portfolio Value"
-            value="$10,000"
-            change={2.34}
-            icon={<AccountBalance sx={{ fontSize: 32 }} />}
-            color="secondary"
-          />
-        </Grid>
       </Grid>
 
       <Grid container spacing={3}>
         {/* Market Overview */}
         <Grid size={{ xs: 12, lg: 8 }}>
-          <Card sx={{ height: 400 }}>
+          <Card>
             <CardContent>
               <Box
                 sx={{
@@ -260,6 +253,7 @@ function Dashboard() {
                   <Typography variant="h5" sx={{ fontWeight: 600 }}>
                     Market Overview
                   </Typography>
+
                   <ToggleButtonGroup
                     value={selectedSymbol}
                     exclusive
@@ -281,37 +275,65 @@ function Dashboard() {
                     ))}
                   </ToggleButtonGroup>
                 </Box>
-                {selectedAnalysis && (
-                  <Chip
-                    label={getSignalText(selectedAnalysis.combined_signal)}
-                    sx={{
-                      bgcolor: `${getSignalColor(selectedAnalysis.combined_signal)}20`,
-                      color: getSignalColor(selectedAnalysis.combined_signal),
-                      fontWeight: 600,
-                    }}
-                  />
-                )}
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                  {selectedAnalysis && (
+                    <Chip
+                      label={getSignalText(selectedAnalysis.combined_signal)}
+                      sx={{
+                        bgcolor: `${getSignalColor(selectedAnalysis.combined_signal)}20`,
+                        color: getSignalColor(selectedAnalysis.combined_signal),
+                        fontWeight: 600,
+                      }}
+                    />
+                  )}
+                  <Tooltip
+                    title={
+                      <Box sx={{ maxWidth: 320, p: 1 }}>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 0.5 }}>
+                          Market Overview
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          This section analyzes data from the past 60 days to provide a summary of key market indicators
+                          and technical signals for your selected symbol, using Google Gemini for AI-powered
+                          interpretation. Market analysis is cached for 24 hours. Use the symbol buttons to switch
+                          between different symbols.
+                        </Typography>
+                      </Box>
+                    }
+                    placement="top"
+                    arrow
+                  >
+                    <IconButton sx={{ p: 0.1 }}>
+                      <QuestionMarkRounded sx={{ fontSize: 16 }} />
+                    </IconButton>
+                  </Tooltip>
+                </Box>
               </Box>
 
               {selectedAnalysis ? (
                 <>
-                  <Typography
-                    variant="subtitle1"
-                    sx={{
-                      mb: 2,
-                      color: "text.secondary",
-                      fontWeight: 500,
-                    }}
-                  >
-                    Analysis for {selectedSymbol} -{" "}
-                    {
+                  <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
+                    <Assessment sx={{ color: theme.palette.primary.main, mr: 1 }} />
+                    <Typography
+                      variant="h6"
+                      sx={{
+                        fontWeight: 700,
+                        letterSpacing: 1,
+                        color: theme.palette.primary.main,
+                        textShadow: "0 1px 4px rgba(0,0,0,0.08)",
+                        textTransform: "uppercase",
+                      }}
+                    >
+                      {selectedSymbol} -{" "}
                       {
-                        SPY: "S&P 500 ETF",
-                        DIA: "Dow Jones ETF",
-                        QQQ: "NASDAQ ETF",
-                      }[selectedAnalysis.symbol]
-                    }
-                  </Typography>
+                        {
+                          SPY: "S&P 500 ETF",
+                          DIA: "Dow Jones ETF",
+                          QQQ: "NASDAQ ETF",
+                        }[selectedAnalysis.symbol]
+                      }
+                    </Typography>
+                  </Box>
                   <Grid container spacing={3}>
                     <Grid size={{ xs: 12, md: 6 }}>
                       <Box sx={{ mb: 2 }}>
@@ -417,6 +439,8 @@ function Dashboard() {
                       </Box>
                     </Grid>
                   </Grid>
+                  <Divider sx={{ my: 3, borderColor: theme.palette.divider }} />
+                  <AIAnalysis symbol={selectedSymbol} />
                 </>
               ) : (
                 <Box sx={{ textAlign: "center", py: 4 }}>
@@ -431,7 +455,7 @@ function Dashboard() {
 
         {/* Quick Actions */}
         <Grid size={{ xs: 12, lg: 4 }}>
-          <Card sx={{ height: 400 }}>
+          <Card>
             <CardContent>
               <Typography variant="h5" sx={{ fontWeight: 600, mb: 3 }}>
                 Quick Actions

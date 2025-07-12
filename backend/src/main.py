@@ -8,6 +8,10 @@ from datetime import datetime, timedelta
 import logging
 import sys
 import os
+from google import genai
+from dotenv import load_dotenv
+
+load_dotenv()
 
 sys.path.append(os.path.dirname(__file__))
 
@@ -20,7 +24,10 @@ from backtesting_engine import BacktestEngine
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title="AI Trading Platform API", version="1.0.0")
+# Initialize Google GenAI client
+genai_client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
+
+app = FastAPI(title="MALET API", version="1.0.0")
 
 # Enable CORS
 app.add_middleware(
@@ -30,6 +37,33 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+AI_ANALYSIS_PROMPT_FORMAT = """
+Analyze the current market conditions for {asset_name} based on the following technical indicators:
+
+**Current Market Data:**
+- Price: ${current_price:.2f} ({price_change_pct:+.2f}% today)
+- RSI: {rsi:.1f} ({rsi_interpretation})
+- MACD: {macd:.4f}
+- Bollinger Band Position: {bollinger_position:.1f}%
+- Volatility: {volatility:.2f}%
+- Combined Signal: {signal_interpretation}
+- Support Levels: ${support_level_0:.2f}, ${support_level_1:.2f}
+- Resistance Levels: ${resistance_level_0:.2f}, ${resistance_level_1:.2f}
+
+**Instructions:**
+Provide a concise market analysis in 2-3 paragraphs that focuses on:
+1. Current market sentiment and momentum based on the technical indicators
+2. Key price levels to watch (support/resistance) and potential trading opportunities
+3. Risk assessment and what traders should be cautious about
+
+**Format Requirements:**
+- Write in professional, accessible language suitable for traders
+- Use markdown formatting for emphasis. Specifically, use *italic* for key terms and **bold** for important levels
+- Do not include headers or titles
+- Keep the analysis practical and actionable
+- Focus on insights that go beyond just restating the numbers
+"""
 
 # Global state
 training_jobs = {}
@@ -395,11 +429,63 @@ async def run_backtest(request: BacktestRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# Analysis endpoints
+# Analysis endpoints and functions
+
+def get_technical_analysis(symbol: str):
+    """
+    Fetch and compute technical analysis for a given symbol.
+    Uses cache if available and fresh, otherwise fetches new data.
+    Returns the analysis dict.
+    """
+    cache_key = f"{symbol}_technical"
+    # Check cache for technical analysis only
+    if cache_key in market_analysis_cache and datetime.now() - market_analysis_cache[cache_key]["date"] < timedelta(days=1):
+        print("Using cached technical analysis")
+        return market_analysis_cache[cache_key]
+
+    print("Fetching new technical analysis")
+    # Fetch data
+    data = data_fetcher.fetch_daily_data(symbol, "60d")
+    if data.empty:
+        raise HTTPException(status_code=404, detail=f"No data found for symbol {symbol}")
+
+    # Add technical indicators
+    data_with_indicators = tech_indicators.calculate_all_indicators(data)
+
+    # Calculate current signals
+    signals = tech_indicators.get_signal_strength(data_with_indicators)
+    latest_data = signals.iloc[-1]
+
+    # Technical analysis (without AI)
+    analysis = {
+        "date": datetime.now(),
+        "symbol": symbol,
+        "current_price": float(latest_data["Close"]),
+        "price_change": float(latest_data["Close"] - data["Close"].iloc[-2]),
+        "price_change_pct": float((latest_data["Close"] - data["Close"].iloc[-2]) / data["Close"].iloc[-2] * 100),
+        "volume": int(latest_data["Volume"]),
+        "rsi": float(latest_data.get("RSI", 0)),
+        "macd": float(latest_data.get("MACD", 0)),
+        "bollinger_position": float(latest_data.get("BB_Position", 0)),
+        "combined_signal": int(latest_data.get("Combined_Signal", 0)),
+        "volatility": float(latest_data.get("Volatility", 0)),
+        "support_levels": [
+            float(latest_data.get("S1", 0)),
+            float(latest_data.get("S2", 0))
+        ],
+        "resistance_levels": [
+            float(latest_data.get("R1", 0)),
+            float(latest_data.get("R2", 0))
+        ]
+    }
+
+    market_analysis_cache[cache_key] = analysis
+    return analysis
+
 @app.get("/market-analysis")
 async def get_market_analysis(symbols: str):
     """
-    Get comprehensive market analysis for a list of symbols
+    Get technical market analysis for a list of symbols (without AI analysis)
     Expects a comma-separated list of symbols
     """
     try:
@@ -407,54 +493,85 @@ async def get_market_analysis(symbols: str):
         symbol_list = [s.strip().upper() for s in symbols.split(',')]
         analyses = []
         for symbol in symbol_list:
-            if symbol in market_analysis_cache and datetime.now() - market_analysis_cache[symbol]["date"] < timedelta(days=1):
-                print("Using cached market analysis")
-                analyses.append(market_analysis_cache[symbol])
-                continue
-            
-            print("Fetching new market analysis")
-
-            # Fetch data
-            data = data_fetcher.fetch_daily_data(symbol, "2mo")
-            
-            if data.empty:
-                raise HTTPException(status_code=404, detail=f"No data found for symbol {symbol}")
-            
-            # Add technical indicators
-            data_with_indicators = tech_indicators.calculate_all_indicators(data)
-            
-            # Calculate current signals
-            signals = tech_indicators.get_signal_strength(data_with_indicators)
-            
-            latest_data = signals.iloc[-1]
-            
-            # Market analysis
-            analysis = {
-                "date": datetime.now(),
-                "symbol": symbol,
-                "current_price": float(latest_data["Close"]),
-                "price_change": float(latest_data["Close"] - data["Close"].iloc[-2]),
-                "price_change_pct": float((latest_data["Close"] - data["Close"].iloc[-2]) / data["Close"].iloc[-2] * 100),
-                "volume": int(latest_data["Volume"]),
-                "rsi": float(latest_data.get("RSI", 0)),
-                "macd": float(latest_data.get("MACD", 0)),
-                "bollinger_position": float(latest_data.get("BB_Position", 0)),
-                "combined_signal": int(latest_data.get("Combined_Signal", 0)),
-                "volatility": float(latest_data.get("Volatility", 0)),
-                "support_levels": [
-                    float(latest_data.get("S1", 0)),
-                    float(latest_data.get("S2", 0))
-                ],
-                "resistance_levels": [
-                    float(latest_data.get("R1", 0)),
-                    float(latest_data.get("R2", 0))
-                ]
-            }
-            
-            market_analysis_cache[symbol] = analysis
+            analysis = get_technical_analysis(symbol)
             analyses.append(analysis)
-            
         return analyses
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/market-analysis/{symbol}/ai")
+async def get_market_ai_analysis(symbol: str):
+    """
+    Get AI-powered market analysis for a specific symbol
+    """
+    try:
+        symbol = symbol.upper()
+        
+        # Check cache for AI analysis
+        cache_key = f"{symbol}_ai"
+        if cache_key in market_analysis_cache and datetime.now() - market_analysis_cache[cache_key]["date"] < timedelta(days=1):
+            print("Using cached AI analysis")
+            return market_analysis_cache[cache_key]
+        
+        print("Generating new AI analysis")
+        
+        technical_analysis = get_technical_analysis(symbol)
+        
+        asset_name = {
+            "SPY": "S&P 500 ETF (SPY)",
+            "DIA": "Dow Jones Industrial Average ETF (DIA)", 
+            "QQQ": "NASDAQ-100 ETF (QQQ)"
+        }.get(symbol, f"{symbol} stock")
+        
+        signal_interpretation = {
+            1: "bullish",
+            0: "neutral", 
+            -1: "bearish"
+        }.get(technical_analysis["combined_signal"], "neutral")
+        
+        # Get recent price trend
+        price_trend = "rising" if technical_analysis["price_change"] > 0 else "declining"
+        
+        # RSI interpretation
+        rsi_interpretation = ""
+        if technical_analysis["rsi"] > 70:
+            rsi_interpretation = "overbought territory"
+        elif technical_analysis["rsi"] < 30:
+            rsi_interpretation = "oversold territory"
+        else:
+            rsi_interpretation = "neutral range"
+        
+        prompt = AI_ANALYSIS_PROMPT_FORMAT.format(
+            asset_name=asset_name,
+            current_price=technical_analysis["current_price"],
+            price_change_pct=technical_analysis["price_change_pct"],
+            rsi=technical_analysis["rsi"],
+            rsi_interpretation=rsi_interpretation,
+            macd=technical_analysis["macd"],
+            bollinger_position=technical_analysis["bollinger_position"] * 100,
+            volatility=technical_analysis["volatility"] * 100,
+            signal_interpretation=signal_interpretation,
+            support_level_0=technical_analysis["support_levels"][0],
+            support_level_1=technical_analysis["support_levels"][1],
+            resistance_level_0=technical_analysis["resistance_levels"][0],
+            resistance_level_1=technical_analysis["resistance_levels"][1]
+        )
+
+        ai_analysis = genai_client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=prompt
+        )
+
+        ai_result = {
+            "symbol": symbol,
+            "ai_analysis": ai_analysis.text,
+            "date": datetime.now(),
+            "generated_at": datetime.now().isoformat()
+        }
+        
+        market_analysis_cache[cache_key] = ai_result
+        
+        return ai_result
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

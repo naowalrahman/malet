@@ -132,6 +132,13 @@ export interface MarketAnalysis {
   resistance_levels: number[];
 }
 
+export interface MarketAIAnalysis {
+  symbol: string;
+  ai_analysis: string;
+  date: Date;
+  generated_at: string;
+}
+
 class ApiService {
   private baseURL: string;
 
@@ -228,6 +235,11 @@ class ApiService {
     const response = await axios.get(`${this.baseURL}/market-analysis`, {
       params: { symbols: symbols.join(",") },
     });
+    return response.data;
+  }
+
+  async getMarketAIAnalysis(symbol: string): Promise<MarketAIAnalysis> {
+    const response = await axios.get(`${this.baseURL}/market-analysis/${symbol}/ai`);
     return response.data;
   }
 

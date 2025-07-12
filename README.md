@@ -76,6 +76,12 @@ To get the application running locally, follow these steps.
 
 ### 1. Backend Setup
 
+Create a `.env` file in the backend directory and add your Gemini API key.
+
+```bash
+GEMINI_API_KEY=your_gemini_api_key
+```
+
 Navigate to the backend directory and set up a virtual environment.
 
 ```bash
