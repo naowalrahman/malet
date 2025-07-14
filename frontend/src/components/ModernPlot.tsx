@@ -1,4 +1,5 @@
-import Plot from "react-plotly.js";
+import { lazy } from "react";
+const Plot = lazy(() => import("react-plotly.js"));
 import { Card, CardContent } from "@mui/material";
 
 interface ModernPlotProps {

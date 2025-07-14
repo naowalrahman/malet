@@ -25,7 +25,8 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Initialize Google GenAI client
-genai_client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "no key")
+genai_client = genai.Client(api_key=GEMINI_API_KEY)
 
 app = FastAPI(title="MALET API", version="1.0.0")
 
@@ -46,7 +47,7 @@ Analyze the current market conditions for {asset_name} based on the following te
 - RSI: {rsi:.1f} ({rsi_interpretation})
 - MACD: {macd:.4f}
 - Bollinger Band Position: {bollinger_position:.1f}%
-- Volatility: {volatility:.2f}%
+- Average True Range: {average_true_range:.2f}%
 - Combined Signal: {signal_interpretation}
 - Support Levels: ${support_level_0:.2f}, ${support_level_1:.2f}
 - Resistance Levels: ${resistance_level_0:.2f}, ${resistance_level_1:.2f}
@@ -468,7 +469,7 @@ def get_technical_analysis(symbol: str):
         "macd": float(latest_data.get("MACD", 0)),
         "bollinger_position": float(latest_data.get("BB_Position", 0)),
         "combined_signal": int(latest_data.get("Combined_Signal", 0)),
-        "volatility": float(latest_data.get("Volatility", 0)),
+        "average_true_range": float(latest_data.get("ATR", 0)),
         "support_levels": [
             float(latest_data.get("S1", 0)),
             float(latest_data.get("S2", 0))
@@ -549,7 +550,7 @@ async def get_market_ai_analysis(symbol: str):
             rsi_interpretation=rsi_interpretation,
             macd=technical_analysis["macd"],
             bollinger_position=technical_analysis["bollinger_position"] * 100,
-            volatility=technical_analysis["volatility"] * 100,
+            average_true_range=technical_analysis["average_true_range"] * 100,
             signal_interpretation=signal_interpretation,
             support_level_0=technical_analysis["support_levels"][0],
             support_level_1=technical_analysis["support_levels"][1],
@@ -572,9 +573,11 @@ async def get_market_ai_analysis(symbol: str):
         market_analysis_cache[cache_key] = ai_result
         
         return ai_result
-        
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        if e.code == 400:
+            raise HTTPException(status_code=400, detail=e.message)
+        else:
+            raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/performance-metrics/{model_id}")
 async def get_model_performance(model_id: str):

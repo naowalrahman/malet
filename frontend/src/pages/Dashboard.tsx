@@ -393,10 +393,10 @@ function Dashboard() {
 
                       <Box>
                         <Typography variant="subtitle2" sx={{ color: "text.secondary", mb: 1 }}>
-                          Volatility
+                          Average True Range
                         </Typography>
                         <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                          {(selectedAnalysis.volatility * 100).toFixed(2)}%
+                          ${selectedAnalysis.average_true_range.toFixed(2)}
                         </Typography>
                       </Box>
                     </Grid>

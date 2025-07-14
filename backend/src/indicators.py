@@ -101,6 +101,7 @@ class TechnicalIndicators:
     @staticmethod
     def add_volatility_indicators(df: pd.DataFrame) -> pd.DataFrame:
         """Add volatility indicators"""
+
         # Bollinger Bands
         bb = ta.volatility.BollingerBands(df['Close'])
         df['BB_Upper'] = bb.bollinger_hband()

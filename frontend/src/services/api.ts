@@ -127,7 +127,7 @@ export interface MarketAnalysis {
   macd: number;
   bollinger_position: number;
   combined_signal: number;
-  volatility: number;
+  average_true_range: number;
   support_levels: number[];
   resistance_levels: number[];
 }

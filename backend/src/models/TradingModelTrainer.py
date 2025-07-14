@@ -357,24 +357,11 @@ class TradingModelTrainer:
         recall_macro = float(recall_score(true_labels, predictions, average='macro', zero_division=0))
         f1_macro = float(f1_score(true_labels, predictions, average='macro', zero_division=0))
         
-        # Calculate weighted averages as well
-        precision_weighted = float(precision_score(true_labels, predictions, average='weighted', zero_division=0))
-        recall_weighted = float(recall_score(true_labels, predictions, average='weighted', zero_division=0))
-        f1_weighted = float(f1_score(true_labels, predictions, average='weighted', zero_division=0))
-        
-        # Calculate per-class metrics
-        from sklearn.metrics import classification_report
-        class_report = classification_report(true_labels, predictions, output_dict=True, zero_division=0)
-
         return {
             'accuracy': accuracy,
             'precision': precision_macro,
             'recall': recall_macro,
             'f1_score': f1_macro,
-            'precision_weighted': precision_weighted,
-            'recall_weighted': recall_weighted,
-            'f1_weighted': f1_weighted,
-            'classification_report': class_report,
             'predictions': predictions.tolist(),
             'true_labels': true_labels.tolist(),
         }

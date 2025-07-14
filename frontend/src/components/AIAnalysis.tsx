@@ -1,27 +1,52 @@
 import React, { use } from "react";
-import { Box, Typography, CircularProgress } from "@mui/material";
-import { Psychology } from "@mui/icons-material";
+import { Box, Typography, CircularProgress, Alert } from "@mui/material";
+import { Psychology, ErrorOutline } from "@mui/icons-material";
 import { useTheme } from "@mui/material/styles";
 import MuiMarkdown from "mui-markdown";
 import { apiService } from "../services/api";
 import type { MarketAIAnalysis } from "../services/api";
 
 // We're caching the AI analysis for each symbol to avoid refetching between symbol changes.
-
 const aiAnalysisCache = new Map<string, Promise<MarketAIAnalysis>>();
 
-function useAIAnalysis(symbol: string): MarketAIAnalysis {
+function useAIAnalysis(symbol: string): MarketAIAnalysis | { error: any } {
   if (!aiAnalysisCache.has(symbol)) {
     aiAnalysisCache.set(symbol, apiService.getMarketAIAnalysis(symbol));
   }
 
   const promise = aiAnalysisCache.get(symbol)!;
-  return use(promise);
+  return use(
+    promise.catch((e: any) => {
+      return { error: e };
+    })
+  );
 }
 
 function AIAnalysisContent({ symbol }: { symbol: string }) {
   const theme = useTheme();
   const aiAnalysis = useAIAnalysis(symbol);
+
+  // Error handling for invalid API key or other backend errors
+  if ("error" in aiAnalysis) {
+    return (
+      <Box sx={{ my: 3 }}>
+        <Alert
+          severity="error"
+          icon={<ErrorOutline />}
+          sx={{
+            alignItems: "center",
+            fontWeight: 500,
+            background: theme.palette.background.paper,
+            color: theme.palette.error.main,
+          }}
+        >
+          {aiAnalysis.error.response.data.detail}
+        </Alert>
+      </Box>
+    );
+  }
+
+  if (!aiAnalysis) return null;
 
   return (
     <>

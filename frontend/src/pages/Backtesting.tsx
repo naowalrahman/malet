@@ -316,43 +316,41 @@ function Backtesting() {
             {/* Selected Models Details */}
             {selectedModels.length > 0 && (
               <Grid size={{ xs: 12 }} sx={{ mb: 2 }}>
-                    <Typography variant="h6" gutterBottom>
-                      Selected Models ({selectedModels.length})
-                    </Typography>
-                    <Grid container spacing={2}>
-                      {selectedModels.map((modelId) => {
-                        const model = models.find((m) => m.model_id === modelId);
-                        if (!model) return null;
+                <Typography variant="h6" gutterBottom>
+                  Selected Models ({selectedModels.length})
+                </Typography>
+                <Grid container spacing={2}>
+                  {selectedModels.map((modelId) => {
+                    const model = models.find((m) => m.model_id === modelId);
+                    if (!model) return null;
 
-                        return (
-                          <Grid size={{ xs: 12, md: 6 }} key={modelId}>
-                            <Card variant="outlined" sx={{ p: 2, bgcolor: "rgba(25, 118, 210, 0.1)" }}>
-                              <Box
-                                sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 1 }}
-                              >
-                                <Typography variant="subtitle2">{getModelLabel(model)}</Typography>
-                                <Button
-                                  variant="outlined"
-                                  startIcon={<Info />}
-                                  onClick={() => {
-                                    setSelectedModelForDetails(model);
-                                    setDetailsDialogOpen(true);
-                                  }}
-                                  size="small"
-                                >
-                                  Details
-                                </Button>
-                              </Box>
-                              <Box sx={{ display: "flex", justifyContent: "space-between" }}>
-                                <Typography variant="body2" color="text.secondary">
-                                  Created: {new Date(model.created_at).toLocaleDateString()}
-                                </Typography>
-                              </Box>
-                            </Card>
-                          </Grid>
-                        );
-                      })}
-                    </Grid>
+                    return (
+                      <Grid size={{ xs: 12, md: 6 }} key={modelId}>
+                        <Card variant="outlined" sx={{ p: 2, bgcolor: "rgba(25, 118, 210, 0.1)" }}>
+                          <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 1 }}>
+                            <Typography variant="subtitle2">{getModelLabel(model)}</Typography>
+                            <Button
+                              variant="outlined"
+                              startIcon={<Info />}
+                              onClick={() => {
+                                setSelectedModelForDetails(model);
+                                setDetailsDialogOpen(true);
+                              }}
+                              size="small"
+                            >
+                              Details
+                            </Button>
+                          </Box>
+                          <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+                            <Typography variant="body2" color="text.secondary">
+                              Created: {new Date(model.created_at).toLocaleDateString()}
+                            </Typography>
+                          </Box>
+                        </Card>
+                      </Grid>
+                    );
+                  })}
+                </Grid>
               </Grid>
             )}
 
