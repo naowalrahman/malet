@@ -214,11 +214,11 @@ function ModelTraining() {
 
             <Grid size={{ xs: 12, md: 6 }}>
               <FormControl fullWidth margin="normal">
-                <InputLabel>Model Type</InputLabel>
-                <Select value={modelType} onChange={(e) => setModelType(e.target.value)} label="Model Type">
+                <InputLabel>Model</InputLabel>
+                <Select value={modelType} onChange={(e) => setModelType(e.target.value)} label="Model">
                   {availableModels.map((model) => (
-                    <MenuItem key={model.model_id} value={model.model_id}>
-                      {model.model_type}
+                    <MenuItem key={model.model_type} value={model.model_type}>
+                      {model.model_name}
                     </MenuItem>
                   ))}
                 </Select>

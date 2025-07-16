@@ -29,7 +29,7 @@ import {
 import { useTheme } from "@mui/material/styles";
 import { useNavigate } from "react-router-dom";
 import { apiService } from "../services/api";
-import type { ModelDetails, MarketAnalysis } from "../services/api";
+import type { TrainedModelDetails, MarketAnalysis } from "../services/api";
 import AIAnalysis from "../components/AIAnalysis";
 
 interface MetricCardProps {
@@ -110,7 +110,7 @@ const MetricCard: React.FC<MetricCardProps> = ({ title, value, change, icon, col
 function Dashboard() {
   const theme = useTheme();
   const navigate = useNavigate();
-  const [models, setModels] = useState<ModelDetails[]>([]);
+  const [models, setModels] = useState<TrainedModelDetails[]>([]);
   const [marketAnalysis, setMarketAnalysis] = useState<MarketAnalysis[]>([]);
   const [selectedSymbol, setSelectedSymbol] = useState<string>("SPY");
   const [loading, setLoading] = useState(true);
@@ -516,7 +516,7 @@ function Dashboard() {
                 </Typography>
                 {models.slice(0, 3).map((model) => (
                   <Box
-                    key={model.model_id}
+                    key={model.model_type}
                     sx={{
                       display: "flex",
                       justifyContent: "space-between",

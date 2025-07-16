@@ -11,6 +11,11 @@ import os
 from google import genai
 from dotenv import load_dotenv
 
+# For consistency:
+# model_id = the auto-generated job id for a particular model training run
+# model_type = the code (lstm, transformer, cnn_lstm, wavenet) used to identify the model architecture in the backend
+# model_name = the name (LSTM, Transformer, CNN-LSTM, WaveNet) used to identify the model architecture in the UI
+
 load_dotenv()
 
 sys.path.append(os.path.dirname(__file__))
@@ -204,9 +209,10 @@ async def get_available_models():
     """Get list of available models"""
     return {
         "models": [
-            {"model_id": "lstm", "model_type": "LSTM"}, 
-            {"model_id": "cnn_lstm", "model_type": "CNN-LSTM"}, 
-            {"model_id": "transformer", "model_type": "Transformer"},
+            {"model_type": "lstm", "model_name": "LSTM"}, 
+            {"model_type": "cnn_lstm", "model_name": "CNN-LSTM"}, 
+            {"model_type": "transformer", "model_name": "Transformer"},
+            {"model_type": "gru", "model_name": "GRU"},
             # {"model_id": "ensemble", "model_type": "Ensemble"}
         ]
     }
@@ -313,7 +319,7 @@ async def list_trained_models():
     for model_id, model_info in models.items():
         training_result = model_info["training_result"]
         model_list.append({
-            "model_id": model_id,
+            "model_id": model_id, # really the job id, but model_id is clearer on the frontend
             "symbol": model_info["symbol"],
             "model_type": model_info["model_type"],
             "created_at": model_info["created_at"],

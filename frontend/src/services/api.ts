@@ -2,6 +2,11 @@ import axios from "axios";
 
 const API_BASE_URL = "http://localhost:8001";
 
+// For consistency:
+// model_id = the auto-generated job id for a particular model training run
+// model_type = the code (lstm, transformer, cnn_lstm, wavenet) used to identify the model architecture in the backend
+// model_name = the name (LSTM, Transformer, CNN-LSTM, WaveNet) used to identify the model architecture in the UI
+
 export interface StockData {
   symbol: string;
   period: string;
@@ -50,9 +55,9 @@ export interface TrainingJob {
 }
 
 export interface ModelDetails {
-  model_id: string;
-  symbol: string;
   model_type: string;
+  symbol: string;
+  model_name: string;
   created_at: string;
   accuracy: number;
 }
