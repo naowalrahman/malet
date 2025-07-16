@@ -1,7 +1,7 @@
 from models.LSTM import LSTM
 from models.Transformer import Transformer
 from models.CNN_LSTM import CNN_LSTM
-
+from models.GRU import GRU
 
 import numpy as np
 import pandas as pd
@@ -168,6 +168,8 @@ class TradingModelTrainer:
             self.model = CNN_LSTM(input_size=input_size, sequence_length=self.sequence_length)
         elif self.model_type == "transformer":
             self.model = Transformer(input_size=input_size)
+        elif self.model_type == "gru":
+            self.model = GRU(input_size=input_size)
         else:
             raise ValueError(f"Unknown model type: {self.model_type}")
 
