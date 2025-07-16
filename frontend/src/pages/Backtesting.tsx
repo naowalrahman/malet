@@ -22,16 +22,15 @@ import {
   TableHead,
   TableRow,
   Paper,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
   Checkbox,
   ListItemText,
   OutlinedInput,
   ToggleButton,
   ToggleButtonGroup,
+  IconButton,
+  Tooltip,
 } from "@mui/material";
-import { PlayArrow, ExpandMore, Info } from "@mui/icons-material";
+import { PlayArrow, Info } from "@mui/icons-material";
 import { apiService } from "../services/api";
 import ModernPlot from "../components/ModernPlot";
 import ModelDetailsDialog from "../components/ModelDetailsDialog";
@@ -129,10 +128,6 @@ function Backtesting() {
 
     return (
       <Box sx={{ mt: 3 }}>
-        <Typography variant="h5" gutterBottom>
-          Performance Visualizations
-        </Typography>
-
         <Grid container spacing={3}>
           {/* Portfolio Comparison Plot */}
           {plots.portfolio_comparison && (
@@ -147,52 +142,15 @@ function Backtesting() {
             </Grid>
           )}
 
-          {/* Individual Model Analysis with Toggle Buttons */}
+
+          {/* Individual Model Analysis */}
           {model_ids && model_ids.length > 0 && (
             <Grid size={{ xs: 12 }}>
               <Card>
                 <CardContent>
-                  <Box
-                    sx={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      mb: 3,
-                      flexWrap: "wrap",
-                      gap: 2,
-                    }}
-                  >
-                    <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                      Individual Model Analysis
-                    </Typography>
-                    <ToggleButtonGroup
-                      value={selectedModelIndex}
-                      exclusive
-                      onChange={(_, newValue) => {
-                        if (newValue !== null) {
-                          setSelectedModelIndex(newValue);
-                        }
-                      }}
-                      size="small"
-                      sx={{
-                        "& .MuiToggleButton-root": {
-                          px: 2,
-                          py: 0.5,
-                          fontSize: "0.875rem",
-                          fontWeight: 600,
-                        },
-                      }}
-                    >
-                      {model_ids.map((modelId, index) => {
-                        const model = models.find((m) => m.model_id === modelId);
-                        return (
-                          <ToggleButton key={modelId} value={index}>
-                            {model ? getModelLabel(model) : `Model ${modelId.substring(0, 8)}...`}
-                          </ToggleButton>
-                        );
-                      })}
-                    </ToggleButtonGroup>
-                  </Box>
+                  <Typography variant="h6" sx={{ fontWeight: 600, mb: 3 }}>
+                    Individual Model Analysis
+                  </Typography>
 
                   {model_ids.map((modelId, index) => (
                     <Box key={modelId} sx={{ display: selectedModelIndex === index ? "block" : "none" }}>
@@ -511,13 +469,111 @@ function Backtesting() {
             </Card>
           </Grid>
 
+          {/* Model Selection Control - Only show if multiple models */}
+          {model_ids && model_ids.length > 1 && (
+            <Grid size={{ xs: 12 }}>
+              <Card sx={{ mb: 2 }}>
+                <CardContent sx={{ py: 2 }}>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      flexWrap: "wrap",
+                      gap: 2,
+                    }}
+                  >
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                      <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                        Model Selection
+                      </Typography>
+                      <Tooltip
+                        title={
+                          <Box sx={{ maxWidth: 320, p: 1 }}>
+                            <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 0.5 }}>
+                              Model Selection
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary">
+                              Use these buttons to switch between detailed analysis for each selected model. The plots and metrics below will update to show results for the chosen model.
+                            </Typography>
+                          </Box>
+                        }
+                        placement="top"
+                        arrow
+                      >
+                        <IconButton sx={{ p: 0.1 }}>
+                          <Info sx={{ fontSize: 16 }} />
+                        </IconButton>
+                      </Tooltip>
+                    </Box>
+                    <ToggleButtonGroup
+                      value={selectedModelIndex}
+                      exclusive
+                      onChange={(_, newValue) => {
+                        if (newValue !== null) {
+                          setSelectedModelIndex(newValue);
+                        }
+                      }}
+                      size="small"
+                      sx={{
+                        "& .MuiToggleButton-root": {
+                          px: 2,
+                          py: 0.5,
+                          fontSize: "0.875rem",
+                          fontWeight: 600,
+                          border: "1px solid",
+                          borderColor: "divider",
+                          color: "text.secondary",
+                          "&:hover": {
+                            backgroundColor: "action.hover",
+                            borderColor: "primary.main",
+                          },
+                          "&.Mui-selected": {
+                            backgroundColor: "primary.main",
+                            color: "primary.contrastText",
+                            borderColor: "primary.main",
+                            "&:hover": {
+                              backgroundColor: "primary.dark",
+                              borderColor: "primary.dark",
+                            },
+                          },
+                        },
+                      }}
+                    >
+                      {model_ids.map((modelId, index) => {
+                        const model = models.find((m) => m.model_id === modelId);
+                        return (
+                          <ToggleButton key={modelId} value={index}>
+                            {model ? getModelLabel(model) : `Model ${modelId.substring(0, 8)}...`}
+                          </ToggleButton>
+                        );
+                      })}
+                    </ToggleButtonGroup>
+                  </Box>
+                </CardContent>
+              </Card>
+            </Grid>
+          )}
+
           {/* Detailed Metrics */}
           <Grid size={{ xs: 12, md: 6 }}>
-            <Accordion>
-              <AccordionSummary expandIcon={<ExpandMore />}>
-                <Typography variant="h6">Buy & Hold Details</Typography>
-              </AccordionSummary>
-              <AccordionDetails>
+            <Card>
+              <CardContent>
+                <Box
+                  sx={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    mb: 3,
+                    flexWrap: "wrap",
+                    gap: 2,
+                  }}
+                >
+                  <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                    ML Strategy Details
+                  </Typography>
+                </Box>
+
                 <Table size="small">
                   <TableBody>
                     <TableRow>
@@ -538,46 +594,46 @@ function Backtesting() {
                     </TableRow>
                   </TableBody>
                 </Table>
-              </AccordionDetails>
-            </Accordion>
+              </CardContent>
+            </Card>
           </Grid>
 
           {/* ML Strategies Details */}
           <Grid size={{ xs: 12, md: 6 }}>
-            {model_ids.map((modelId) => {
-              const model = models.find((m) => m.model_id === modelId);
-              return (
-                <Accordion key={modelId} sx={{ mb: 1 }}>
-                  <AccordionSummary expandIcon={<ExpandMore />}>
-                    <Typography variant="h6">
-                      {model ? getModelLabel(model) : `Model ${modelId.substring(0, 8)}...`} Details
-                    </Typography>
-                  </AccordionSummary>
-                  <AccordionDetails>
-                    <Table size="small">
-                      <TableBody>
-                        <TableRow>
-                          <TableCell>Total Trades</TableCell>
-                          <TableCell align="right">{ml_strategies[modelId].total_trades}</TableCell>
-                        </TableRow>
-                        <TableRow>
-                          <TableCell>Win Rate</TableCell>
-                          <TableCell align="right">{formatPercentage(ml_strategies[modelId].win_rate)}</TableCell>
-                        </TableRow>
-                        <TableRow>
-                          <TableCell>Volatility</TableCell>
-                          <TableCell align="right">{formatPercentage(ml_strategies[modelId].volatility)}</TableCell>
-                        </TableRow>
-                        <TableRow>
-                          <TableCell>Calmar Ratio</TableCell>
-                          <TableCell align="right">{ml_strategies[modelId].calmar_ratio?.toFixed(3)}</TableCell>
-                        </TableRow>
-                      </TableBody>
-                    </Table>
-                  </AccordionDetails>
-                </Accordion>
-              );
-            })}
+            <Card>
+              <CardContent>
+                <Typography variant="h6" sx={{ fontWeight: 600, mb: 3 }}>
+                  ML Strategy Details
+                </Typography>
+
+                {model_ids.map((modelId, index) => {
+                  return (
+                    <Box key={modelId} sx={{ display: selectedModelIndex === index ? "block" : "none" }}>
+                      <Table size="small">
+                        <TableBody>
+                          <TableRow>
+                            <TableCell>Total Trades</TableCell>
+                            <TableCell align="right">{ml_strategies[modelId].total_trades}</TableCell>
+                          </TableRow>
+                          <TableRow>
+                            <TableCell>Win Rate</TableCell>
+                            <TableCell align="right">{formatPercentage(ml_strategies[modelId].win_rate)}</TableCell>
+                          </TableRow>
+                          <TableRow>
+                            <TableCell>Volatility</TableCell>
+                            <TableCell align="right">{formatPercentage(ml_strategies[modelId].volatility)}</TableCell>
+                          </TableRow>
+                          <TableRow>
+                            <TableCell>Calmar Ratio</TableCell>
+                            <TableCell align="right">{ml_strategies[modelId].calmar_ratio?.toFixed(3)}</TableCell>
+                          </TableRow>
+                        </TableBody>
+                      </Table>
+                    </Box>
+                  );
+                })}
+              </CardContent>
+            </Card>
           </Grid>
         </Grid>
       </Box>
