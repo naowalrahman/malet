@@ -142,7 +142,6 @@ function Backtesting() {
             </Grid>
           )}
 
-
           {/* Individual Model Analysis */}
           {model_ids && model_ids.length > 0 && (
             <Grid size={{ xs: 12 }}>
@@ -494,7 +493,8 @@ function Backtesting() {
                               Model Selection
                             </Typography>
                             <Typography variant="body2" color="text.secondary">
-                              Use these buttons to switch between detailed analysis for each selected model. The plots and metrics below will update to show results for the chosen model.
+                              Use these buttons to switch between detailed analysis for each selected model. The plots
+                              and metrics below will update to show results for the chosen model.
                             </Typography>
                           </Box>
                         }
