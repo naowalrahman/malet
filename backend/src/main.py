@@ -13,8 +13,8 @@ from dotenv import load_dotenv
 
 # For consistency:
 # model_id = the auto-generated job id for a particular model training run
-# model_type = the code (lstm, transformer, cnn_lstm, wavenet) used to identify the model architecture in the backend
-# model_name = the name (LSTM, Transformer, CNN-LSTM, WaveNet) used to identify the model architecture in the UI
+# model_type = the code (lstm, transformer, cnn_lstm, gru) used to identify the model architecture in the backend
+# model_name = the name (LSTM, Transformer, CNN-LSTM, GRU) used to identify the model architecture in the UI
 
 load_dotenv()
 
