@@ -564,7 +564,7 @@ async def get_market_ai_analysis(symbol: str):
             resistance_level_1=technical_analysis["resistance_levels"][1]
         )
 
-        ai_analysis = genai_client.models.generate_content(
+        ai_analysis = await genai_client.aio.models.generate_content(
             model="gemini-2.5-flash",
             contents=prompt
         )
