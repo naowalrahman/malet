@@ -51,6 +51,16 @@ function formatPercentage(value: number): string {
   return `${(value * 100).toFixed(2)}%`;
 }
 
+function formatValue(value: number, type: string): string {
+  if (type === "currency") {
+    return formatCurrency(value);
+  } else if (type === "percentage") {
+    return formatPercentage(value);
+  } else {
+    return value.toFixed(3);
+  }
+}
+
 function ModelChip({ model, onDelete }: { model: TrainedModelDetails; onDelete: () => void }) {
   return (
     <Chip
@@ -111,8 +121,7 @@ function Backtesting() {
         end_date: endDate,
       };
 
-      const backtestResults = await apiService.runBacktest(request);
-      setResults(backtestResults);
+      setResults(await apiService.runBacktest(request));
     } catch (err) {
       setError("Failed to run backtest");
     } finally {
@@ -147,9 +156,100 @@ function Backtesting() {
             <Grid size={{ xs: 12 }}>
               <Card>
                 <CardContent>
-                  <Typography variant="h6" sx={{ fontWeight: 600, mb: 3 }}>
-                    Individual Model Analysis
-                  </Typography>
+                  <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 3 }}>
+                    <Box sx={{ display: "flex", alignItems: "center" }}>
+                      <Typography variant="h6" sx={{ fontWeight: 600, mr: 1 }}>
+                        Individual Model Analysis
+                      </Typography>
+                      <Tooltip
+                        title={
+                          <Box sx={{ maxWidth: 320, p: 1 }}>
+                            <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 0.5 }}>
+                              Model Selection
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary">
+                              Use the buttons to switch between detailed analysis for each selected model. The plots and
+                              metrics below will update to show results for the chosen model.
+                            </Typography>
+                          </Box>
+                        }
+                        placement="top"
+                        arrow
+                      >
+                        <IconButton sx={{ p: 0.1 }}>
+                          <Info sx={{ fontSize: 16 }} />
+                        </IconButton>
+                      </Tooltip>
+                    </Box>
+                    <Box sx={{ display: "flex", justifyContent: "flex-end", alignItems: "center" }}>
+                      <ToggleButtonGroup
+                        value={selectedModelIndex}
+                        exclusive
+                        onChange={(_, newValue) => {
+                          if (newValue !== null) {
+                            setSelectedModelIndex(newValue);
+                          }
+                        }}
+                        size="small"
+                        // sx={{
+                        //   "& .MuiToggleButton-root": {
+                        //     px: 2,
+                        //     py: 0.5,
+                        //     fontSize: "0.875rem",
+                        //     fontWeight: 600,
+                        //     border: "1px solid",
+                        //     borderColor: "divider",
+                        //     backgroundColor: "primary.main",
+                        //     color: "text.secondary",
+                        //     "&:hover": {
+                        //       backgroundColor: "primary.dark",
+                        //       borderColor: "primary.main",
+                        //     },
+                        //     "&.Mui-selected": {
+                        //       backgroundColor: "secondary.main",
+                        //       color: "primary.contrastText",
+                        //       borderColor: "primary.main",
+                        //       "&:hover": {
+                        //         backgroundColor: "secondary.dark",
+                        //         borderColor: "secondary.dark",
+                        //       },
+                        //     },
+                        //   },
+                        // }}
+                      >
+                        {model_ids.map((modelId, index) => {
+                          const model = models.find((m) => m.model_id === modelId);
+                          return (
+                            <ToggleButton
+                              key={modelId}
+                              value={index}
+                              sx={{
+                                borderRadius: 2.5,
+                                px: 2.5,
+                                py: 1,
+                                fontSize: "0.875rem",
+                                fontWeight: 600,
+                                "&:hover": {
+                                  transform: "translateY(-1px)",
+                                  boxShadow: "0 2px 8px 0 rgba(59, 130, 246, 0.2)",
+                                },
+                                "&.Mui-selected": {
+                                  backgroundColor: "primary.main",
+                                  borderColor: "primary.main",
+                                  "&:hover": {
+                                    backgroundColor: "primary.dark",
+                                    borderColor: "primary.dark",
+                                  },
+                                },
+                              }}
+                            >
+                              {model ? getModelLabel(model) : `Model ${modelId.substring(0, 8)}...`}
+                            </ToggleButton>
+                          );
+                        })}
+                      </ToggleButtonGroup>
+                    </Box>
+                  </Box>
 
                   {model_ids.map((modelId, index) => (
                     <Box key={modelId} sx={{ display: selectedModelIndex === index ? "block" : "none" }}>
@@ -407,231 +507,91 @@ function Backtesting() {
                       </TableRow>
                     </TableHead>
                     <TableBody>
-                      <TableRow>
-                        <TableCell>Final Value</TableCell>
-                        <TableCell align="right">{formatCurrency(buy_and_hold.final_value)}</TableCell>
-                        {model_ids.map((modelId) => (
-                          <TableCell key={modelId} align="right">
-                            {formatCurrency(ml_strategies[modelId].final_value)}
-                          </TableCell>
-                        ))}
-                      </TableRow>
-                      <TableRow>
-                        <TableCell>Total Return</TableCell>
-                        <TableCell align="right">{formatPercentage(buy_and_hold.total_return)}</TableCell>
-                        {model_ids.map((modelId) => (
-                          <TableCell key={modelId} align="right">
-                            <Chip
-                              label={formatPercentage(ml_strategies[modelId].total_return)}
-                              color={
-                                ml_strategies[modelId].total_return > buy_and_hold.total_return ? "success" : "error"
-                              }
-                              size="small"
-                            />
-                          </TableCell>
-                        ))}
-                      </TableRow>
-                      <TableRow>
-                        <TableCell>Sharpe Ratio</TableCell>
-                        <TableCell align="right">{buy_and_hold.sharpe_ratio?.toFixed(3)}</TableCell>
-                        {model_ids.map((modelId) => (
-                          <TableCell key={modelId} align="right">
-                            <Chip
-                              label={ml_strategies[modelId].sharpe_ratio?.toFixed(3)}
-                              color={
-                                ml_strategies[modelId].sharpe_ratio > buy_and_hold.sharpe_ratio ? "success" : "error"
-                              }
-                              size="small"
-                            />
-                          </TableCell>
-                        ))}
-                      </TableRow>
-                      <TableRow>
-                        <TableCell>Max Drawdown</TableCell>
-                        <TableCell align="right">{formatPercentage(buy_and_hold.max_drawdown)}</TableCell>
-                        {model_ids.map((modelId) => (
-                          <TableCell key={modelId} align="right">
-                            <Chip
-                              label={formatPercentage(ml_strategies[modelId].max_drawdown)}
-                              color={
-                                ml_strategies[modelId].max_drawdown < buy_and_hold.max_drawdown ? "success" : "error"
-                              }
-                              size="small"
-                            />
-                          </TableCell>
-                        ))}
-                      </TableRow>
+                      {[
+                        // [Final Value, Total Return, Sharpe Ratio, Max Drawdown] mapped to table rows
+                        {
+                          label: "Final Value",
+                          buyAndHoldValue: buy_and_hold.final_value,
+                          type: "currency",
+                          greaterIsBetter: true,
+                          getModelValue: (ml_strategy: any) => ml_strategy.final_value,
+                        },
+                        {
+                          label: "Total Return",
+                          buyAndHoldValue: buy_and_hold.total_return,
+                          type: "percentage",
+                          greaterIsBetter: true,
+                          getModelValue: (ml_strategy: any) => ml_strategy.total_return,
+                        },
+                        {
+                          label: "Sharpe Ratio",
+                          buyAndHoldValue: buy_and_hold.sharpe_ratio,
+                          type: "decimal",
+                          greaterIsBetter: true,
+                          getModelValue: (ml_strategy: any) => ml_strategy.sharpe_ratio,
+                        },
+                        {
+                          label: "Max Drawdown",
+                          buyAndHoldValue: buy_and_hold.max_drawdown,
+                          type: "percentage",
+                          greaterIsBetter: false,
+                          getModelValue: (ml_strategy: any) => ml_strategy.max_drawdown,
+                        },
+                        {
+                          label: "Total Trades",
+                          buyAndHoldValue: buy_and_hold.total_trades,
+                          type: "integer",
+                          greaterIsBetter: true,
+                          getModelValue: (ml_strategy: any) => ml_strategy.total_trades,
+                        },
+                        {
+                          label: "Win Rate",
+                          buyAndHoldValue: buy_and_hold.win_rate,
+                          type: "percentage",
+                          greaterIsBetter: true,
+                          getModelValue: (ml_strategy: any) => ml_strategy.win_rate,
+                        },
+                        {
+                          label: "Volatility",
+                          buyAndHoldValue: buy_and_hold.volatility,
+                          type: "percentage",
+                          greaterIsBetter: false,
+                          getModelValue: (ml_strategy: any) => ml_strategy.volatility,
+                        },
+                        {
+                          label: "Calmar Ratio",
+                          buyAndHoldValue: buy_and_hold.calmar_ratio,
+                          type: "decimal",
+                          greaterIsBetter: true,
+                          getModelValue: (ml_strategy: any) => ml_strategy.calmar_ratio,
+                        },
+                      ].map((row) => (
+                        <TableRow key={row.label}>
+                          <TableCell>{row.label}</TableCell>
+                          <TableCell align="right">{formatValue(row.buyAndHoldValue, row.type)}</TableCell>
+                          {/* one column per model */}
+                          {model_ids.map((modelId) => (
+                            <TableCell key={modelId} align="right">
+                              <Chip
+                                label={formatValue(row.getModelValue(ml_strategies[modelId]), row.type)}
+                                color={
+                                  row.greaterIsBetter
+                                    ? row.getModelValue(ml_strategies[modelId]) > row.buyAndHoldValue
+                                      ? "success"
+                                      : "error"
+                                    : row.getModelValue(ml_strategies[modelId]) < row.buyAndHoldValue
+                                      ? "success"
+                                      : "error"
+                                }
+                                size="small"
+                              />
+                            </TableCell>
+                          ))}
+                        </TableRow>
+                      ))}
                     </TableBody>
                   </Table>
                 </TableContainer>
-              </CardContent>
-            </Card>
-          </Grid>
-
-          {/* Model Selection Control - Only show if multiple models */}
-          {model_ids && model_ids.length > 1 && (
-            <Grid size={{ xs: 12 }}>
-              <Card sx={{ mb: 2 }}>
-                <CardContent sx={{ py: 2 }}>
-                  <Box
-                    sx={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      flexWrap: "wrap",
-                      gap: 2,
-                    }}
-                  >
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                      <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                        Model Selection
-                      </Typography>
-                      <Tooltip
-                        title={
-                          <Box sx={{ maxWidth: 320, p: 1 }}>
-                            <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 0.5 }}>
-                              Model Selection
-                            </Typography>
-                            <Typography variant="body2" color="text.secondary">
-                              Use these buttons to switch between detailed analysis for each selected model. The plots
-                              and metrics below will update to show results for the chosen model.
-                            </Typography>
-                          </Box>
-                        }
-                        placement="top"
-                        arrow
-                      >
-                        <IconButton sx={{ p: 0.1 }}>
-                          <Info sx={{ fontSize: 16 }} />
-                        </IconButton>
-                      </Tooltip>
-                    </Box>
-                    <ToggleButtonGroup
-                      value={selectedModelIndex}
-                      exclusive
-                      onChange={(_, newValue) => {
-                        if (newValue !== null) {
-                          setSelectedModelIndex(newValue);
-                        }
-                      }}
-                      size="small"
-                      sx={{
-                        "& .MuiToggleButton-root": {
-                          px: 2,
-                          py: 0.5,
-                          fontSize: "0.875rem",
-                          fontWeight: 600,
-                          border: "1px solid",
-                          borderColor: "divider",
-                          color: "text.secondary",
-                          "&:hover": {
-                            backgroundColor: "action.hover",
-                            borderColor: "primary.main",
-                          },
-                          "&.Mui-selected": {
-                            backgroundColor: "primary.main",
-                            color: "primary.contrastText",
-                            borderColor: "primary.main",
-                            "&:hover": {
-                              backgroundColor: "primary.dark",
-                              borderColor: "primary.dark",
-                            },
-                          },
-                        },
-                      }}
-                    >
-                      {model_ids.map((modelId, index) => {
-                        const model = models.find((m) => m.model_id === modelId);
-                        return (
-                          <ToggleButton key={modelId} value={index}>
-                            {model ? getModelLabel(model) : `Model ${modelId.substring(0, 8)}...`}
-                          </ToggleButton>
-                        );
-                      })}
-                    </ToggleButtonGroup>
-                  </Box>
-                </CardContent>
-              </Card>
-            </Grid>
-          )}
-
-          {/* Detailed Metrics */}
-          <Grid size={{ xs: 12, md: 6 }}>
-            <Card>
-              <CardContent>
-                <Box
-                  sx={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    mb: 3,
-                    flexWrap: "wrap",
-                    gap: 2,
-                  }}
-                >
-                  <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                    ML Strategy Details
-                  </Typography>
-                </Box>
-
-                <Table size="small">
-                  <TableBody>
-                    <TableRow>
-                      <TableCell>Total Trades</TableCell>
-                      <TableCell align="right">{buy_and_hold.total_trades}</TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell>Win Rate</TableCell>
-                      <TableCell align="right">{formatPercentage(buy_and_hold.win_rate)}</TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell>Volatility</TableCell>
-                      <TableCell align="right">{formatPercentage(buy_and_hold.volatility)}</TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell>Calmar Ratio</TableCell>
-                      <TableCell align="right">{buy_and_hold.calmar_ratio?.toFixed(3)}</TableCell>
-                    </TableRow>
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          </Grid>
-
-          {/* ML Strategies Details */}
-          <Grid size={{ xs: 12, md: 6 }}>
-            <Card>
-              <CardContent>
-                <Typography variant="h6" sx={{ fontWeight: 600, mb: 3 }}>
-                  ML Strategy Details
-                </Typography>
-
-                {model_ids.map((modelId, index) => {
-                  return (
-                    <Box key={modelId} sx={{ display: selectedModelIndex === index ? "block" : "none" }}>
-                      <Table size="small">
-                        <TableBody>
-                          <TableRow>
-                            <TableCell>Total Trades</TableCell>
-                            <TableCell align="right">{ml_strategies[modelId].total_trades}</TableCell>
-                          </TableRow>
-                          <TableRow>
-                            <TableCell>Win Rate</TableCell>
-                            <TableCell align="right">{formatPercentage(ml_strategies[modelId].win_rate)}</TableCell>
-                          </TableRow>
-                          <TableRow>
-                            <TableCell>Volatility</TableCell>
-                            <TableCell align="right">{formatPercentage(ml_strategies[modelId].volatility)}</TableCell>
-                          </TableRow>
-                          <TableRow>
-                            <TableCell>Calmar Ratio</TableCell>
-                            <TableCell align="right">{ml_strategies[modelId].calmar_ratio?.toFixed(3)}</TableCell>
-                          </TableRow>
-                        </TableBody>
-                      </Table>
-                    </Box>
-                  );
-                })}
               </CardContent>
             </Card>
           </Grid>
