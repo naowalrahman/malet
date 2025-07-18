@@ -112,7 +112,7 @@ class MLTradingStrategy(TradingStrategy):
             # Start by buying shares with initial capital (aggressive strategy)
             if len(predictions) > 0 and len(aligned_data) > 0:
                 first_price = aligned_data['Close'].iloc[0]
-                initial_shares = int(current_capital * 0.95 / first_price)
+                initial_shares = int(current_capital / first_price)
                 if initial_shares > 0:
                     cost = initial_shares * first_price
                     transaction_fee = cost * self.transaction_cost
@@ -140,7 +140,7 @@ class MLTradingStrategy(TradingStrategy):
                 # Trading logic based on binary predictions
                 # 0: Down (Sell), 1: Up (Buy)
                 if prediction == 1 and current_shares == 0:  # Buy signal (price going up)
-                    shares_to_buy = int(current_capital * 0.95 / current_price)  # Use 95% of capital
+                    shares_to_buy = int(current_capital / current_price)
                     if shares_to_buy > 0:
                         cost = shares_to_buy * current_price
                         transaction_fee = cost * self.transaction_cost

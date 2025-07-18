@@ -22,6 +22,12 @@ MALET (**MA**chine **LE**arning **T**rader) is a platform to fetch financial dat
 
 ![MALET dashboard](img/dashboard.svg)
 
+## Todos
+
+- [ ] List buy and sell accuracy separately in addition to the total accuracy
+- [ ] Add ideal buy and sell signals to the backtesting results
+- [ ] Add option to specify separate tickers for buy and sell
+
 ## ✨ Key Features
 
 * **Interactive Dashboard:** Get a high-level overview of market conditions, model performance, and quick actions. Utilizes Gemini API to create a comprehensive AI-powered analysis of market data for SPY, QQQ, and DJIA.
