@@ -1,12 +1,7 @@
 import pandas as pd
 import numpy as np
-from typing import Dict, List, Tuple, Optional
-import matplotlib.pyplot as plt
-import seaborn as sns
-from datetime import datetime
+from typing import Dict, List
 import plotly.graph_objects as go
-import plotly.express as px
-from plotly.subplots import make_subplots
 
 class TradingStrategy:
     """
@@ -107,6 +102,8 @@ class MLTradingStrategy(TradingStrategy):
             # Align predictions with data (predictions start from sequence_length)
             start_idx = len(data) - len(predictions)
             aligned_data = data.iloc[start_idx:].copy()
+            # Store original dates before resetting index
+            original_dates = aligned_data.index.tolist()
             aligned_data = aligned_data.reset_index(drop=True)
 
             # Start by buying shares with initial capital (aggressive strategy)
@@ -122,7 +119,7 @@ class MLTradingStrategy(TradingStrategy):
                     transaction_costs += transaction_fee
                     
                     trades.append({
-                        'date': aligned_data.index[0] if hasattr(aligned_data.index[0], 'isoformat') else 0,
+                        'date': original_dates[0] if original_dates else 0,
                         'action': 'INITIAL_BUY',
                         'shares': initial_shares,
                         'price': first_price,
@@ -151,7 +148,7 @@ class MLTradingStrategy(TradingStrategy):
                             transaction_costs += transaction_fee
                             
                             trades.append({
-                                'date': row.name if hasattr(row, 'name') else i,
+                                'date': original_dates[i] if i < len(original_dates) else i,
                                 'action': 'BUY',
                                 'shares': shares_to_buy,
                                 'price': current_price,
@@ -167,7 +164,7 @@ class MLTradingStrategy(TradingStrategy):
                     transaction_costs += transaction_fee
                     
                     trades.append({
-                        'date': row.name if hasattr(row, 'name') else i,
+                        'date': original_dates[i] if i < len(original_dates) else i,
                         'action': 'SELL',
                         'shares': current_shares,
                         'price': current_price,
@@ -202,7 +199,7 @@ class MLTradingStrategy(TradingStrategy):
                 'transaction_costs': transaction_costs,
                 'trades': trades,
                 'portfolio_values': portfolio_values,
-                'dates': aligned_data.index.tolist() if hasattr(aligned_data.index, 'tolist') else list(range(len(portfolio_values))),
+                'dates': original_dates[:len(portfolio_values)] if 'original_dates' in locals() else list(range(len(portfolio_values))),
                 'predictions': predictions.tolist() if hasattr(predictions, 'tolist') else list(predictions)
             }
             
@@ -423,6 +420,7 @@ class BacktestEngine:
         """
         try:
             bh_values = self.results['buy_and_hold']['portfolio_values']
+            bh_dates = self.results['buy_and_hold']['dates']
             
             if len(bh_values) == 0:
                 return None
@@ -431,6 +429,7 @@ class BacktestEngine:
             
             # Add Buy & Hold trace
             fig.add_trace(go.Scatter(
+                x=bh_dates,
                 y=bh_values,
                 mode='lines',
                 name='Buy & Hold',
@@ -442,9 +441,11 @@ class BacktestEngine:
             
             for i, model_id in enumerate(self.results['model_ids']):
                 ml_values = self.results['ml_strategies'][model_id]['portfolio_values']
+                ml_dates = self.results['ml_strategies'][model_id]['dates']
                 if len(ml_values) > 0:
                     color = colors[i % len(colors)]
                     fig.add_trace(go.Scatter(
+                        x=ml_dates,
                         y=ml_values,
                         mode='lines',
                         name=self.model_names[model_id],
@@ -453,7 +454,7 @@ class BacktestEngine:
             
             fig.update_layout(
                 title='Portfolio Value Comparison',
-                xaxis_title='Time',
+                xaxis_title='Date',
                 yaxis_title='Portfolio Value ($)',
                 hovermode='x unified',
                 legend=dict(
@@ -462,7 +463,8 @@ class BacktestEngine:
                     y=1.02,
                     xanchor="right",
                     x=1
-                )
+                ),
+                xaxis=dict(tickformat='%b %d, %Y')
             )
             
             return fig.to_json()
@@ -521,6 +523,8 @@ class BacktestEngine:
         try:
             bh_values = np.array(self.results['buy_and_hold']['portfolio_values'])
             ml_values = np.array(self.results['ml_strategies'][model_id]['portfolio_values'])
+            bh_dates = self.results['buy_and_hold']['dates']
+            ml_dates = self.results['ml_strategies'][model_id]['dates']
             
             if len(bh_values) == 0 or len(ml_values) == 0:
                 return None
@@ -535,6 +539,7 @@ class BacktestEngine:
             fig = go.Figure()
             
             fig.add_trace(go.Scatter(
+                x=bh_dates,
                 y=bh_drawdown,
                 mode='lines',
                 name='Buy & Hold',
@@ -543,6 +548,7 @@ class BacktestEngine:
             ))
             
             fig.add_trace(go.Scatter(
+                x=ml_dates,
                 y=ml_drawdown,
                 mode='lines',
                 name=f'{self.model_names[model_id]}',
@@ -552,9 +558,10 @@ class BacktestEngine:
             
             fig.update_layout(
                 title=f'Drawdown Analysis - {self.model_names[model_id]}',
-                xaxis_title='Time',
+                xaxis_title='Date',
                 yaxis_title='Drawdown (%)',
-                hovermode='x unified'
+                hovermode='x unified',
+                xaxis=dict(tickformat='%b %d, %Y')
             )
             
             return fig.to_json()
@@ -598,9 +605,10 @@ class BacktestEngine:
             
             fig.update_layout(
                 title=f'Trading Signals - {self.model_names[model_id]}',
-                xaxis_title='Time',
+                xaxis_title='Date',
                 yaxis_title='Price ($)',
-                hovermode='closest'
+                hovermode='closest',
+                xaxis=dict(tickformat='%b %d, %Y')
             )
             
             return fig.to_json()
