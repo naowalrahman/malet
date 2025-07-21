@@ -1,3 +1,4 @@
+import traceback
 import pandas as pd
 import numpy as np
 from typing import Dict, List
@@ -205,9 +206,7 @@ class MLTradingStrategy(TradingStrategy):
             }
             
         except Exception as e:
-            print(f"Error in ML backtesting: {str(e)}")
-            import traceback
-            traceback.print_exc()
+            print(f"Error in ML backtesting: {traceback.format_exc()}")
             return self._empty_results()
     
     def _empty_results(self):
@@ -469,7 +468,7 @@ class BacktestEngine:
             return fig.to_json()
             
         except Exception as e:
-            print(f"Error creating multi-model portfolio comparison plot: {str(e)}")
+            print(f"Error creating multi-model portfolio comparison plot: {traceback.format_exc()}")
             return None
     
     def plot_returns_distribution(self, model_id: str):
@@ -512,7 +511,7 @@ class BacktestEngine:
             return fig.to_json()
             
         except Exception as e:
-            print(f"Error creating returns distribution plot for model {model_id}: {str(e)}")
+            print(f"Error creating returns distribution plot for model {model_id}: {traceback.format_exc()}")
             return None
     
     def plot_drawdown_analysis(self, model_id: str):
@@ -566,7 +565,7 @@ class BacktestEngine:
             return fig.to_json()
             
         except Exception as e:
-            print(f"Error creating drawdown analysis plot for model {model_id}: {str(e)}")
+            print(f"Error creating drawdown analysis plot for model {model_id}: {traceback.format_exc()}")
             return None
     
     def plot_trade_analysis(self, model_id: str):
@@ -613,5 +612,5 @@ class BacktestEngine:
             return fig.to_json()
             
         except Exception as e:
-            print(f"Error creating trade analysis plot for model {model_id}: {str(e)}")
+            print(f"Error creating trade analysis plot for model {model_id}: {traceback.format_exc()}")
             return None

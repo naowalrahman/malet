@@ -1,3 +1,4 @@
+import traceback
 from fastapi import FastAPI, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 import pandas as pd
@@ -175,7 +176,7 @@ async def get_stock_data(request: StockRequest):
         return result
         
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=traceback.format_exc())
 
 @app.post("/historical-data")
 async def get_historical_data(request: HistoricalDataRequest):
@@ -202,7 +203,7 @@ async def get_historical_data(request: HistoricalDataRequest):
         return result
         
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=traceback.format_exc())
 
 @app.get("/stock-info/{symbol}")
 async def get_stock_info(symbol: str):
@@ -211,7 +212,7 @@ async def get_stock_info(symbol: str):
         info = data_fetcher.get_stock_info(symbol)
         return info
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=traceback.format_exc())
 
 # Machine Learning endpoints
 
@@ -301,7 +302,7 @@ async def train_model_background(job_id: str, request: TrainingRequest):
         
     except Exception as e:
         training_jobs[job_id]["status"] = "error"
-        training_jobs[job_id]["error"] = str(e)
+        training_jobs[job_id]["error"] = traceback.format_exc()
 
 @app.post("/train-model")
 async def train_model(request: TrainingRequest, background_tasks: BackgroundTasks):
@@ -404,7 +405,7 @@ async def make_prediction(request: PredictionRequest):
         }
         
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=traceback.format_exc())
 
 # Backtesting endpoints
 @app.post("/backtest")
@@ -451,7 +452,7 @@ async def run_backtest(request: BacktestRequest):
         }
         
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=traceback.format_exc())
 
 # Analysis endpoints and functions
 
@@ -521,7 +522,7 @@ async def get_market_analysis(symbols: str):
             analyses.append(analysis)
         return analyses
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=traceback.format_exc())
 
 @app.get("/market-analysis/{symbol}/ai")
 async def get_market_ai_analysis(symbol: str):
@@ -600,7 +601,7 @@ async def get_market_ai_analysis(symbol: str):
         if e.code == 400:
             raise HTTPException(status_code=400, detail=e.message)
         else:
-            raise HTTPException(status_code=500, detail=str(e))
+            raise HTTPException(status_code=500, detail=traceback.format_exc())
 
 @app.get("/performance-metrics/{model_id}")
 async def get_model_performance(model_id: str):
@@ -621,7 +622,7 @@ async def get_model_performance(model_id: str):
         }
         
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=traceback.format_exc())
 
 if __name__ == "__main__":
     import uvicorn

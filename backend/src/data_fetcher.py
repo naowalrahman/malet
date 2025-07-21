@@ -1,3 +1,4 @@
+import traceback
 import yfinance as yf
 import pandas as pd
 import numpy as np
@@ -42,7 +43,7 @@ class DataFetcher:
             return data
             
         except Exception as e:
-            print(f"Error fetching data for {symbol}: {str(e)}")
+            print(f"Error fetching data for {symbol}: {traceback.format_exc()}")
             return pd.DataFrame()
     
     def fetch_historical_data(self, symbol: str, start_date: str, end_date: str, interval: Literal["1d", "1m"] = "1d") -> pd.DataFrame:
@@ -76,7 +77,7 @@ class DataFetcher:
             return data
             
         except Exception as e:
-            print(f"Error fetching historical data for {symbol}: {str(e)}")
+            print(f"Error fetching historical data for {symbol}: {traceback.format_exc()}")
             return pd.DataFrame()
         
     def fetch_multiple_symbols(self, symbols: List[str], period: str = "1mo") -> Dict[str, pd.DataFrame]:
@@ -127,7 +128,7 @@ class DataFetcher:
             }
             
         except Exception as e:
-            print(f"Error fetching info for {symbol}: {str(e)}")
+            print(f"Error fetching info for {symbol}: {traceback.format_exc()}")
             return {'symbol': symbol, 'name': symbol}
     
 # Utility functions
