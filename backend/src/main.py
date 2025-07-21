@@ -11,6 +11,7 @@ import sys
 import os
 from google import genai
 from dotenv import load_dotenv
+import pickle
 
 # For consistency:
 # model_id = the auto-generated job id for a particular model training run
@@ -78,6 +79,15 @@ models: Dict[str, Dict] = {}
 model_names: Dict[str, str] = {} # Only purpose is to pass to backtest engine
 data_cache: Dict[str, pd.DataFrame] = {}
 market_analysis_cache: Dict[str, Dict] = {}
+
+# Load saved models
+SAVED_MODELS_DIR = os.getenv("SAVED_MODELS_DIR")
+for file in os.listdir(SAVED_MODELS_DIR):
+    with open(f"{SAVED_MODELS_DIR}/{file}", "rb") as f:
+        job_id = file.split(".")[0]
+        model = pickle.load(f)
+        models[job_id] = model
+        model_names[job_id] = model["model_name"]
 
 # Pydantic models for API
 class StockRequest(BaseModel):
@@ -262,8 +272,11 @@ async def train_model_background(job_id: str, request: TrainingRequest):
         training_jobs[job_id]["progress"] = 100
         training_jobs[job_id]["result"] = training_result
         
+        model_names[job_id] = f"{request.symbol} - {request.model_type} ({(100 * training_result['final_metrics']['accuracy']):.1f}%)"
+
         # Store the trained model
         models[job_id] = {
+            "model_name": model_names[job_id],
             "trainer": trainer,
             "symbol": request.symbol,
             "model_type": request.model_type,
@@ -280,8 +293,11 @@ async def train_model_background(job_id: str, request: TrainingRequest):
                 "end_date": request.end_date
             }
         }
+
+        # serialize and save models[job_id]
+        with open(f"{SAVED_MODELS_DIR}/{job_id}.pkl", "wb") as file:
+            pickle.dump(models[job_id], file)
         
-        model_names[job_id] = f"{request.symbol} - {request.model_type} ({(100 * training_result['final_metrics']['accuracy']):.1f}%)"
         
     except Exception as e:
         training_jobs[job_id]["status"] = "error"

@@ -224,5 +224,10 @@ cython_debug/
 #  refer to https://docs.cursor.com/context/ignore-files
 .cursorignore
 .cursorindexingignore
+
+# Test files
 test_training.py
 test_fixes.py
+
+# Saved models serialized for data persistence
+backend/saved_models
