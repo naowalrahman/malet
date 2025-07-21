@@ -1,7 +1,8 @@
 from fastapi import FastAPI, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
+import pandas as pd
 from pydantic import BaseModel
-from typing import Optional, List
+from typing import Dict, Optional, List
 import uvicorn
 import uuid
 from datetime import datetime, timedelta
@@ -72,11 +73,11 @@ Provide a concise market analysis in 2-3 paragraphs that focuses on:
 """
 
 # Global state
-training_jobs = {}
-models = {}
-model_names = {} # Only purpose is to pass to backtest engine
-data_cache = {}
-market_analysis_cache = {}
+training_jobs: Dict[str, Dict] = {}
+models: Dict[str, Dict] = {}
+model_names: Dict[str, str] = {} # Only purpose is to pass to backtest engine
+data_cache: Dict[str, pd.DataFrame] = {}
+market_analysis_cache: Dict[str, Dict] = {}
 
 # Pydantic models for API
 class StockRequest(BaseModel):

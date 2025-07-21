@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 from typing import Dict, List
 import plotly.graph_objects as go
+from models.TradingModelTrainer import TradingModelTrainer
 
 class TradingStrategy:
     """
@@ -71,7 +72,7 @@ class MLTradingStrategy(TradingStrategy):
     Machine Learning based trading strategy
     """
     
-    def __init__(self, model, initial_capital: float = 10000, 
+    def __init__(self, model: TradingModelTrainer, initial_capital: float = 10000, 
                  transaction_cost: float = 0):
         super().__init__(initial_capital, transaction_cost)
         self.model = model
@@ -232,7 +233,7 @@ class BacktestEngine:
         self.results = {}
         self.model_names = model_names
         
-    def run_comparison(self, data: pd.DataFrame, ml_models: List, 
+    def run_comparison(self, data: pd.DataFrame, ml_models: List[TradingModelTrainer], 
                                  model_ids: List[str], initial_capital: float = 10000) -> Dict:
         """
         Run comparison between Buy & Hold and multiple ML strategies
@@ -240,28 +241,26 @@ class BacktestEngine:
         
         # Store results for each model
         ml_results = {}
-        all_ml_strategies = {}
         
         start_idx = 0
 
-        for i, (ml_model, model_id) in enumerate(zip(ml_models, model_ids)):
+        for ml_model, model_id in zip(ml_models, model_ids):
             ml_strategy = MLTradingStrategy(ml_model, initial_capital)
             ml_result = ml_strategy.backtest(data)
-            ml_metrics = self.calculate_metrics(ml_result, data)
+            ml_metrics = self.calculate_metrics(ml_result)
 
             if ml_result.get('predictions'):
                 predictions_length = len(ml_result['predictions'])
                 start_idx = max(start_idx, len(data) - predictions_length)
             
             ml_results[model_id] = {**ml_result, **ml_metrics}
-            all_ml_strategies[model_id] = ml_result
 
         aligned_data = data.iloc[start_idx:].copy()
 
         # Run Buy and Hold strategy once on aligned data
         bh_strategy = BuyAndHoldStrategy(initial_capital)
         bh_results = bh_strategy.backtest(aligned_data)
-        bh_metrics = self.calculate_metrics(bh_results, aligned_data)
+        bh_metrics = self.calculate_metrics(bh_results)
         
         # Create comparison metrics for each model vs buy and hold
         comparison_metrics = {}
@@ -278,7 +277,7 @@ class BacktestEngine:
         self.results = multi_comparison
         return multi_comparison
     
-    def calculate_metrics(self, results: Dict, data: pd.DataFrame) -> Dict:
+    def calculate_metrics(self, results: Dict) -> Dict:
         """
         Calculate comprehensive performance metrics
         """

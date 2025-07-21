@@ -13,7 +13,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 
 
-from typing import Dict, Tuple
+from typing import Dict, Tuple, List
 
 
 class TradingModelTrainer:
@@ -24,12 +24,11 @@ class TradingModelTrainer:
     def __init__(self, model_type: str = "lstm", sequence_length: int = 60):
         self.model_type = model_type
         self.sequence_length = sequence_length
-        self.model = None
-        self.scaler = None
-        self.label_encoder = None
-        self.feature_columns = []
+        self.model: nn.Module = None
+        self.scaler: StandardScaler = None
+        self.feature_columns: List[str] = []
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        self.training_history = []
+        self.training_history: Dict = {}
 
     def prepare_features(self, df: pd.DataFrame) -> pd.DataFrame:
         """
