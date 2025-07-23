@@ -46,7 +46,7 @@ class TechnicalIndicators:
         
         # Pattern Recognition
         df = TechnicalIndicators.add_patterns(df)
-        
+
         return df
     
     @staticmethod
@@ -256,24 +256,69 @@ class TechnicalIndicators:
     
     @staticmethod
     def get_signal_strength(df: pd.DataFrame) -> pd.DataFrame:
-        """Calculate overall signal strength"""
+        """Calculate market trend using proper signal interpretation"""
         signals = df.copy()
         
-        # Momentum signals
-        signals['RSI_Signal'] = np.where(signals['RSI'] < 30, 1, 
-                                np.where(signals['RSI'] > 70, -1, 0))
+        # Calculate additional needed metrics
+        signals['SMA_20'] = signals['Close'].rolling(20).mean()
+        signals['MA_Slope'] = signals['SMA_50'].diff(5)  # 5-period slope
+        signals['BB_Width'] = signals['BB_Upper'] - signals['BB_Lower']
+        signals['BB_Position'] = (signals['Close'] - signals['BB_Lower']) / signals['BB_Width']
         
-        signals['MACD_Signal_Ind'] = np.where(signals['MACD'] > signals['MACD_Signal'], 1, -1)
+        # 1. RSI Trend Signal (context-aware)
+        # In uptrends, RSI > 50 is bullish; in downtrends, RSI < 50 is bearish
+        trend_context = np.where(signals['Close'] > signals['SMA_50'], 'up', 'down')
+        signals['RSI_Signal'] = np.where(
+            (trend_context == 'up') & (signals['RSI'] > 50), 1,  # Uptrend + RSI bullish
+            np.where((trend_context == 'up') & (signals['RSI'] < 40), -1,  # Uptrend weakening
+            np.where((trend_context == 'down') & (signals['RSI'] < 50), -1,  # Downtrend + RSI bearish
+            np.where((trend_context == 'down') & (signals['RSI'] > 60), 1, 0))))  # Downtrend reversing
         
-        # Trend signals
-        signals['MA_Signal'] = np.where(signals['Close'] > signals['SMA_50'], 1, -1)
+        # 2. MACD Momentum Signal (crossover + direction + position)
+        macd_above_signal = signals['MACD'] > signals['MACD_Signal']
+        macd_above_zero = signals['MACD'] > 0
+        macd_rising = signals['MACD'].diff() > 0
         
-        # Volatility signals
-        signals['BB_Signal'] = np.where(signals['Close'] < signals['BB_Lower'], 1,
-                              np.where(signals['Close'] > signals['BB_Upper'], -1, 0))
+        signals['MACD_Signal_Ind'] = np.where(
+            macd_above_signal & macd_above_zero & macd_rising, 1,    # Strong bullish
+            np.where(~macd_above_signal & (signals['MACD'] < 0) & ~macd_rising, -1,  # Strong bearish
+            0))  # Neutral for mixed signals
         
-        # Combine signals
-        signal_columns = ['RSI_Signal', 'MACD_Signal_Ind', 'MA_Signal', 'BB_Signal']
-        signals['Combined_Signal'] = signals[signal_columns].sum(axis=1)
+        # 3. Trend Strength Signal (slope + distance)
+        ma_rising = signals['MA_Slope'] > 0
+        price_above_ma = signals['Close'] > signals['SMA_50']
+        strong_trend = abs(signals['Close'] - signals['SMA_50']) / signals['SMA_50'] > 0.02  # 2% threshold
         
-        return signals
+        signals['MA_Signal'] = np.where(
+            price_above_ma & ma_rising & strong_trend, 1,     # Strong uptrend
+            np.where(~price_above_ma & ~ma_rising & strong_trend, -1,  # Strong downtrend
+            0))  # Weak or sideways trend
+        
+        # 4. Volatility Breakout Signal (band walk + expansion)
+        bb_expanding = signals['BB_Width'] > signals['BB_Width'].shift(5)
+        upper_band_walk = signals['BB_Position'] > 0.8  # Price in upper 20% of bands
+        lower_band_walk = signals['BB_Position'] < 0.2  # Price in lower 20% of bands
+        
+        signals['BB_Signal'] = np.where(
+            upper_band_walk & bb_expanding, 1,      # Breakout continuation upward
+            np.where(lower_band_walk & bb_expanding, -1,  # Breakout continuation downward
+            0))  # Range-bound or contracting volatility
+        
+        # 5. Consensus Logic with Trend Priority
+        # Count non-zero signals for each direction
+        signal_cols = ['RSI_Signal', 'MACD_Signal_Ind', 'MA_Signal', 'BB_Signal']
+        bullish_signals = (signals[signal_cols] == 1).sum(axis=1)
+        bearish_signals = (signals[signal_cols] == -1).sum(axis=1)
+        
+        effective_bullish = bullish_signals + np.where(signals['MA_Signal'] == 1, 1, 0)
+        effective_bearish = bearish_signals + np.where(signals['MA_Signal'] == -1, 1, 0)
+        
+        # Final signal requires clear consensus (at least 2 indicators agreeing)
+        df['Combined_Signal'] = np.where(
+            (effective_bullish >= 2) & (effective_bullish > effective_bearish), 1,
+            np.where((effective_bearish >= 2) & (effective_bearish > effective_bullish), -1, 0)
+        )
+        
+        return df
+
+
