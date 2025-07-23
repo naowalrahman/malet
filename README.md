@@ -86,10 +86,11 @@ To get the application running locally, follow these steps.
 
 ### 1. Backend Setup
 
-Create a `.env` file in the backend directory and add your Gemini API key.
+Create a `.env` file in the backend directory and add your Gemini API key and the directory to save the trained models.
 
 ```bash
 GEMINI_API_KEY=your_gemini_api_key
+SAVED_MODELS_DIR=/your/path/to/save/models
 ```
 
 Navigate to the backend directory and set up a virtual environment.

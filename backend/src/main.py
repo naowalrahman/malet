@@ -77,7 +77,6 @@ Provide a concise market analysis in 2-3 paragraphs that focuses on:
 # Global state
 training_jobs: Dict[str, Dict] = {}
 models: Dict[str, Dict] = {}
-model_names: Dict[str, str] = {} # Only purpose is to pass to backtest engine
 data_cache: Dict[str, pd.DataFrame] = {}
 market_analysis_cache: Dict[str, Dict] = {}
 
@@ -88,7 +87,6 @@ for file in os.listdir(SAVED_MODELS_DIR):
         job_id = file.split(".")[0]
         model = pickle.load(f)
         models[job_id] = model
-        model_names[job_id] = model["model_name"]
 
 # Pydantic models for API
 class StockRequest(BaseModel):
@@ -273,11 +271,9 @@ async def train_model_background(job_id: str, request: TrainingRequest):
         training_jobs[job_id]["progress"] = 100
         training_jobs[job_id]["result"] = training_result
         
-        model_names[job_id] = f"{request.symbol} - {request.model_type} ({(100 * training_result['final_metrics']['accuracy']):.1f}%)"
-
         # Store the trained model
         models[job_id] = {
-            "model_name": model_names[job_id],
+            "model_name": f"{request.symbol} - {request.model_type} ({(100 * training_result['final_metrics']['accuracy']):.1f}%)",
             "trainer": trainer,
             "symbol": request.symbol,
             "model_type": request.model_type,
@@ -357,6 +353,7 @@ async def delete_model(model_id: str):
         raise HTTPException(status_code=404, detail="Model not found")
     
     del models[model_id]
+    os.remove(f"{SAVED_MODELS_DIR}/{model_id}.pkl")
     if model_id in training_jobs:
         del training_jobs[model_id]
     
@@ -432,10 +429,9 @@ async def run_backtest(request: BacktestRequest):
         data_with_indicators = tech_indicators.calculate_all_indicators(data)
         
         # Run backtesting
-        backtest_engine = BacktestEngine(model_names)
+        backtest_engine = BacktestEngine(models)
         results = backtest_engine.run_comparison(
             data_with_indicators, 
-            [models[model_id]["trainer"] for model_id in request.model_ids],
             request.model_ids,
             request.initial_capital
         )
@@ -477,9 +473,9 @@ def get_technical_analysis(symbol: str):
     # Add technical indicators
     data_with_indicators = tech_indicators.calculate_all_indicators(data)
 
-    # Calculate current signals
-    signals = tech_indicators.get_signal_strength(data_with_indicators)
-    latest_data = signals.iloc[-1]
+    # Calculate combined signal strength
+    data_with_indicators = tech_indicators.get_signal_strength(data_with_indicators)
+    latest_data = data_with_indicators.iloc[-1]
 
     # Technical analysis (without AI)
     analysis = {

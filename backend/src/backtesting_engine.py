@@ -228,12 +228,11 @@ class BacktestEngine:
     Comprehensive backtesting engine
     """
     
-    def __init__(self, model_names):
+    def __init__(self, models: Dict[str, Dict]):
         self.results = {}
-        self.model_names = model_names
+        self.models = models
         
-    def run_comparison(self, data: pd.DataFrame, ml_models: List[TradingModelTrainer], 
-                                 model_ids: List[str], initial_capital: float = 10000) -> Dict:
+    def run_comparison(self, data: pd.DataFrame, model_ids: List[str], initial_capital: float = 10000) -> Dict:
         """
         Run comparison between Buy & Hold and multiple ML strategies
         """
@@ -243,8 +242,8 @@ class BacktestEngine:
         
         start_idx = 0
 
-        for ml_model, model_id in zip(ml_models, model_ids):
-            ml_strategy = MLTradingStrategy(ml_model, initial_capital)
+        for model_id in model_ids:
+            ml_strategy = MLTradingStrategy(self.models[model_id]["trainer"], initial_capital)
             ml_result = ml_strategy.backtest(data)
             ml_metrics = self.calculate_metrics(ml_result)
 
@@ -438,15 +437,18 @@ class BacktestEngine:
             colors = ['red', 'green', 'orange', 'purple', 'brown', 'pink', 'gray', 'olive', 'cyan']
             
             for i, model_id in enumerate(self.results['model_ids']):
-                ml_values = self.results['ml_strategies'][model_id]['portfolio_values']
-                ml_dates = self.results['ml_strategies'][model_id]['dates']
+                strategy = self.results['ml_strategies'][model_id]
+                ml_values = strategy['portfolio_values']
+                ml_dates = strategy['dates']
+                model_name = self.models[model_id]['model_name']
+
                 if len(ml_values) > 0:
                     color = colors[i % len(colors)]
                     fig.add_trace(go.Scatter(
                         x=ml_dates,
                         y=ml_values,
                         mode='lines',
-                        name=self.model_names[model_id],
+                        name=model_name,
                         line=dict(color=color, width=2)
                     ))
             
@@ -478,7 +480,8 @@ class BacktestEngine:
         try:
             bh_values = np.array(self.results['buy_and_hold']['portfolio_values'])
             ml_values = np.array(self.results['ml_strategies'][model_id]['portfolio_values'])
-            
+            model_name = self.models[model_id]['model_name']
+
             if len(bh_values) <= 1 or len(ml_values) <= 1:
                 return None
             
@@ -496,13 +499,13 @@ class BacktestEngine:
             
             fig.add_trace(go.Histogram(
                 x=ml_returns,
-                name=self.model_names[model_id],
+                name=model_name,
                 opacity=0.7,
                 nbinsx=50
             ))
             
             fig.update_layout(
-                title=f'Returns Distribution - {self.model_names[model_id]}',
+                title=f'Returns Distribution - {model_name}',
                 xaxis_title='Returns',
                 yaxis_title='Frequency',
                 barmode='overlay'
@@ -520,9 +523,11 @@ class BacktestEngine:
         """
         try:
             bh_values = np.array(self.results['buy_and_hold']['portfolio_values'])
-            ml_values = np.array(self.results['ml_strategies'][model_id]['portfolio_values'])
+            strategy = self.results['ml_strategies'][model_id]
+            ml_values = np.array(strategy['portfolio_values'])
             bh_dates = self.results['buy_and_hold']['dates']
-            ml_dates = self.results['ml_strategies'][model_id]['dates']
+            ml_dates = strategy['dates']
+            model_name = self.models[model_id]['model_name']
             
             if len(bh_values) == 0 or len(ml_values) == 0:
                 return None
@@ -549,13 +554,13 @@ class BacktestEngine:
                 x=ml_dates,
                 y=ml_drawdown,
                 mode='lines',
-                name=f'{self.model_names[model_id]}',
+                name=f'{model_name}',
                 fill='tonexty',
                 line=dict(color='red')
             ))
             
             fig.update_layout(
-                title=f'Drawdown Analysis - {self.model_names[model_id]}',
+                title=f'Drawdown Analysis - {model_name}',
                 xaxis_title='Date',
                 yaxis_title='Drawdown (%)',
                 hovermode='x unified',
@@ -574,6 +579,7 @@ class BacktestEngine:
         """
         try:
             trades = self.results['ml_strategies'][model_id]['trades']
+            model_name = self.models[model_id]['model_name']
             
             if not trades:
                 return None
@@ -602,7 +608,7 @@ class BacktestEngine:
                 ))
             
             fig.update_layout(
-                title=f'Trading Signals - {self.model_names[model_id]}',
+                title=f'Trading Signals - {model_name}',
                 xaxis_title='Date',
                 yaxis_title='Price ($)',
                 hovermode='closest',
