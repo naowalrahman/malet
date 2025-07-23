@@ -182,14 +182,14 @@ function ModelTraining() {
     }
   };
 
-  const handleCancelTraining = () => {
+  const handleTrainInBackground = () => {
     if (pollInterval) {
       clearInterval(pollInterval);
       setPollInterval(null);
     }
     setIsTraining(false);
     setActiveStep(0);
-    setError("Training cancelled by user");
+    setError("Training in background");
   };
 
   function renderConfigurationStep() {
@@ -329,10 +329,7 @@ function ModelTraining() {
             </Grid>
           </Grid>
 
-          <Box sx={{ mt: 3, display: "flex", justifyContent: "space-between" }}>
-            <Button variant="outlined" onClick={() => setActiveStep(0)} disabled>
-              Previous
-            </Button>
+          <Box sx={{ mt: 3, display: "flex", justifyContent: "flex-end" }}>
             <Button variant="contained" onClick={handleStartTraining} startIcon={<PlayArrow />}>
               Start Training
             </Button>
@@ -369,8 +366,8 @@ function ModelTraining() {
           </Box>
 
           <Box sx={{ display: "flex", justifyContent: "center", gap: 2 }}>
-            <Button variant="outlined" onClick={handleCancelTraining} disabled={!isTraining}>
-              Cancel Training
+            <Button variant="outlined" onClick={handleTrainInBackground} disabled={!isTraining}>
+              Train in Background
             </Button>
           </Box>
         </CardContent>

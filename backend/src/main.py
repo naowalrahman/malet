@@ -13,6 +13,7 @@ import os
 from google import genai
 from dotenv import load_dotenv
 import pickle
+from fastapi.concurrency import run_in_threadpool
 
 # For consistency:
 # model_id = the auto-generated job id for a particular model training run
@@ -55,7 +56,7 @@ Analyze the current market conditions for {asset_name} based on the following te
 - RSI: {rsi:.1f} ({rsi_interpretation})
 - MACD: {macd:.4f}
 - Bollinger Band Position: {bollinger_position:.1f}%
-- Average True Range: {average_true_range:.2f}%
+- Average True Range: ${average_true_range:.2f}
 - Combined Signal: {signal_interpretation}
 - Support Levels: ${support_level_0:.2f}, ${support_level_1:.2f}
 - Resistance Levels: ${resistance_level_0:.2f}, ${resistance_level_1:.2f}
@@ -244,28 +245,33 @@ async def train_model_background(job_id: str, request: TrainingRequest):
             training_jobs[job_id]["error"] = f"No data found for symbol {request.symbol}"
             return
         
-        training_jobs[job_id]["status"] = "calculating_indicators"
-        training_jobs[job_id]["progress"] = 20
-        
-        # Add technical indicators
-        data_with_indicators = tech_indicators.calculate_all_indicators(data)
-        
-        training_jobs[job_id]["status"] = "training"
-        training_jobs[job_id]["progress"] = 30
-        
-        # Initialize trainer
-        trainer = TradingModelTrainer(
-            model_type=request.model_type,
-            sequence_length=request.sequence_length
-        )
-        
-        # Train model
-        training_result = trainer.train(
-            data_with_indicators,
-            epochs=request.epochs,
-            batch_size=request.batch_size,
-            learning_rate=request.learning_rate
-        )
+        def do_training():
+            training_jobs[job_id]["status"] = "calculating_indicators"
+            training_jobs[job_id]["progress"] = 20
+            
+            # Add technical indicators
+            data_with_indicators = tech_indicators.calculate_all_indicators(data)
+            
+            training_jobs[job_id]["status"] = "training"
+            training_jobs[job_id]["progress"] = 30
+            
+            # Initialize trainer
+            trainer = TradingModelTrainer(
+                model_type=request.model_type,
+                sequence_length=request.sequence_length
+            )
+            
+            # Train model
+            training_result = trainer.train(
+                data_with_indicators,
+                epochs=request.epochs,
+                batch_size=request.batch_size,
+                learning_rate=request.learning_rate
+            )
+
+            return training_result, trainer
+
+        training_result, trainer = await run_in_threadpool(do_training)
         
         training_jobs[job_id]["status"] = "completed"
         training_jobs[job_id]["progress"] = 100
@@ -313,7 +319,7 @@ async def train_model(request: TrainingRequest, background_tasks: BackgroundTask
         "model_type": request.model_type,
         "created_at": datetime.now().isoformat()
     }
-    
+
     background_tasks.add_task(train_model_background, job_id, request)
     
     return {"job_id": job_id, "status": "started"}
@@ -570,7 +576,7 @@ async def get_market_ai_analysis(symbol: str):
             rsi_interpretation=rsi_interpretation,
             macd=technical_analysis["macd"],
             bollinger_position=technical_analysis["bollinger_position"] * 100,
-            average_true_range=technical_analysis["average_true_range"] * 100,
+            average_true_range=technical_analysis["average_true_range"],
             signal_interpretation=signal_interpretation,
             support_level_0=technical_analysis["support_levels"][0],
             support_level_1=technical_analysis["support_levels"][1],
