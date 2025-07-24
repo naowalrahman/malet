@@ -217,7 +217,7 @@ function Dashboard() {
         </Grid>
         <Grid size={{ xs: 12, sm: 6, md: 4 }}>
           <MetricCard
-            title="Avg Accuracy"
+            title="Average Accuracy"
             value={`${(avgAccuracy * 100).toFixed(1)}%`}
             icon={<Assessment sx={{ fontSize: 32 }} />}
             color="success"

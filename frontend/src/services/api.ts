@@ -52,6 +52,11 @@ export interface TrainingJob {
   results?: any;
   result?: any;
   error?: string;
+  current_epoch?: number;
+  total_epochs?: number;
+  train_loss?: number;
+  val_loss?: number;
+  val_accuracy?: number;
 }
 
 export interface ModelDetails {

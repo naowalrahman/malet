@@ -30,6 +30,8 @@ import {
   DialogContent,
   DialogActions,
   Slider,
+  LinearProgress,
+  Paper,
 } from "@mui/material";
 import { PlayArrow, Download, Delete, ExpandMore, Info } from "@mui/icons-material";
 import { apiService } from "../services/api";
@@ -57,6 +59,15 @@ function ModelTraining() {
   const [trainedModels, setTrainedModels] = useState<TrainedModelDetails[]>([]);
   const [availableModels, setAvailableModels] = useState<ModelDetails[]>([]);
   const [pollInterval, setPollInterval] = useState<NodeJS.Timeout | null>(null);
+  const [trainingProgress, setTrainingProgress] = useState<{
+    currentEpoch: number;
+    totalEpochs: number;
+    trainLoss: number;
+    valLoss: number;
+    valAccuracy: number;
+    progress: number;
+    status: string;
+  } | null>(null);
 
   const [error, setError] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -97,6 +108,7 @@ function ModelTraining() {
       setError(null);
       setIsTraining(true);
       setActiveStep(1);
+      setTrainingProgress(null); // Clear any previous progress
 
       const request: TrainingRequest = {
         symbol,
@@ -115,16 +127,28 @@ function ModelTraining() {
       const response = await apiService.trainModel(request);
       const jobId = response.job_id;
 
-      // Poll for training completion every 2 seconds
+      // Poll for training completion every 500 ms
       const interval = setInterval(async () => {
         try {
           const status = await apiService.getTrainingStatus(jobId);
+          
+          setTrainingProgress({
+            currentEpoch: status.current_epoch || 0,
+            totalEpochs: status.total_epochs || 0,
+            trainLoss: status.train_loss || 0,
+            valLoss: status.val_loss || 0,
+            valAccuracy: status.val_accuracy || 0,
+            progress: status.progress || 0,
+            status: status.status
+          });
+          
           if (status.status === "completed") {
             clearInterval(interval);
             setPollInterval(null);
             setIsTraining(false);
             setActiveStep(2);
             setTrainingResults(status.results || status.result);
+            setTrainingProgress(null);
             if (status.result?.model_id) {
               setCurrentModelId(status.result.model_id);
             }
@@ -132,6 +156,7 @@ function ModelTraining() {
           } else if (status.status === "failed") {
             clearInterval(interval);
             setPollInterval(null);
+            setTrainingProgress(null);
             throw new Error(status.error || "Training failed");
           }
           // If status is still "running" or "pending", continue polling
@@ -157,7 +182,7 @@ function ModelTraining() {
           console.warn(`Error checking training status: ${statusError}`);
           throw statusError;
         }
-      }, 2000); // Poll every 2 seconds
+      }, 500);
 
       setPollInterval(interval);
     } catch (err) {
@@ -189,6 +214,7 @@ function ModelTraining() {
     }
     setIsTraining(false);
     setActiveStep(0);
+    setTrainingProgress(null);
     setError("Training in background");
   };
 
@@ -352,17 +378,82 @@ function ModelTraining() {
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
-              py: 6,
-              minHeight: 300,
+              py: 4,
+              minHeight: 400,
             }}
           >
             <CircularProgress size={60} sx={{ mb: 3 }} />
             <Typography variant="body1" color="text.secondary" gutterBottom>
               Training Model: {modelType.toUpperCase()} for {symbol}
             </Typography>
-            <Typography variant="body2" color="text.secondary">
-              This may take several minutes...
-            </Typography>
+            
+            {trainingProgress ? (
+              <Box sx={{ width: "100%", maxWidth: 500, mt: 3 }}>
+                <Paper sx={{ p: 3, mb: 2 }}>                  
+                  {/* Overall Progress */}
+                  <Box sx={{ mb: 3 }}>
+                    <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
+                      <Typography variant="body2">Overall Progress</Typography>
+                      <Typography variant="body2">{Math.round(trainingProgress.progress)}%</Typography>
+                    </Box>
+                    <LinearProgress 
+                      variant="determinate" 
+                      value={trainingProgress.progress} 
+                      sx={{ height: 8, borderRadius: 4 }}
+                    />
+                  </Box>
+
+                  {/* Epoch Progress */}
+                  <Box sx={{ mb: 3 }}>
+                    <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
+                      <Typography variant="body2">Epoch Progress</Typography>
+                      <Typography variant="body2">
+                        {trainingProgress.currentEpoch} / {trainingProgress.totalEpochs}
+                      </Typography>
+                    </Box>
+                    <LinearProgress 
+                      variant="determinate" 
+                      value={(trainingProgress.currentEpoch / trainingProgress.totalEpochs) * 100} 
+                      sx={{ height: 6, borderRadius: 3 }}
+                    />
+                  </Box>
+
+                  {/* Training Metrics */}
+                  <Grid container spacing={2}>
+                    <Grid size={{ xs: 6 }}>
+                      <Box sx={{ textAlign: "center" }}>
+                        <Typography variant="body2" color="text.secondary">Train Loss</Typography>
+                        <Typography variant="h6">{trainingProgress.trainLoss.toFixed(4)}</Typography>
+                      </Box>
+                    </Grid>
+                    <Grid size={{ xs: 6 }}>
+                      <Box sx={{ textAlign: "center" }}>
+                        <Typography variant="body2" color="text.secondary">Validation Loss</Typography>
+                        <Typography variant="h6">{trainingProgress.valLoss.toFixed(4)}</Typography>
+                      </Box>
+                    </Grid>
+                    <Grid size={{ xs: 12 }}>
+                      <Box sx={{ textAlign: "center", mt: 1 }}>
+                        <Typography variant="body2" color="text.secondary">Validation Accuracy</Typography>
+                        <Chip 
+                          label={`${(trainingProgress.valAccuracy * 100).toFixed(2)}%`} 
+                          color="primary" 
+                          sx={{ fontSize: "1rem", height: 32 }}
+                        />
+                      </Box>
+                    </Grid>
+                  </Grid>
+
+                  <Typography variant="body2" color="text.secondary" sx={{ mt: 2, textAlign: "center" }}>
+                    Status: {trainingProgress.status.charAt(0).toUpperCase() + trainingProgress.status.slice(1)}
+                  </Typography>
+                </Paper>
+              </Box>
+            ) : (
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+                Initializing training...
+              </Typography>
+            )}
           </Box>
 
           <Box sx={{ display: "flex", justifyContent: "center", gap: 2 }}>

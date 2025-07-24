@@ -231,18 +231,26 @@ async def get_available_models():
 async def train_model_background(job_id: str, request: TrainingRequest):
     """Background task for model training"""
     try:
-        training_jobs[job_id]["status"] = "fetching_data"
-        training_jobs[job_id]["progress"] = 10
+        def fetch_data():
+            training_jobs[job_id]["status"] = "fetching_data"
+            training_jobs[job_id]["progress"] = 10
+            
+            # Fetch data
+            if request.start_date and request.end_date:
+                data = data_fetcher.fetch_historical_data(request.symbol, request.start_date, request.end_date)
+            else:
+                data = data_fetcher.fetch_daily_data(request.symbol, "6mo")
+            
+            if data.empty:
+                training_jobs[job_id]["status"] = "error"
+                training_jobs[job_id]["error"] = f"No data found for symbol {request.symbol}"
+                return None
+            
+            return data
         
-        # Fetch data
-        if request.start_date and request.end_date:
-            data = data_fetcher.fetch_historical_data(request.symbol, request.start_date, request.end_date)
-        else:
-            data = data_fetcher.fetch_daily_data(request.symbol, "6mo")
+        data = await run_in_threadpool(fetch_data)
         
-        if data.empty:
-            training_jobs[job_id]["status"] = "error"
-            training_jobs[job_id]["error"] = f"No data found for symbol {request.symbol}"
+        if data is None:
             return
         
         def do_training():
@@ -261,12 +269,25 @@ async def train_model_background(job_id: str, request: TrainingRequest):
                 sequence_length=request.sequence_length
             )
             
-            # Train model
+            # Progress callback function
+            def progress_callback(progress_info):
+                training_jobs[job_id].update({
+                    "status": "training",
+                    "progress": progress_info["progress"],
+                    "current_epoch": progress_info["epoch"],
+                    "total_epochs": progress_info["total_epochs"],
+                    "train_loss": progress_info["train_loss"],
+                    "val_loss": progress_info["val_loss"],
+                    "val_accuracy": progress_info["val_accuracy"]
+                })
+            
+            # Train model with progress callback
             training_result = trainer.train(
                 data_with_indicators,
                 epochs=request.epochs,
                 batch_size=request.batch_size,
-                learning_rate=request.learning_rate
+                learning_rate=request.learning_rate,
+                progress_callback=progress_callback
             )
 
             return training_result, trainer

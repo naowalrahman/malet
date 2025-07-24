@@ -175,7 +175,8 @@ class TradingModelTrainer:
         self.model.to(self.device)
 
     def train(self, df: pd.DataFrame, epochs: int = 100, batch_size: int = 32,
-              learning_rate: float = 0.001, validation_split: float = 0.2) -> Dict:
+              learning_rate: float = 0.001, validation_split: float = 0.2, 
+              progress_callback=None) -> Dict:
         """
         Train the model
         """
@@ -302,6 +303,18 @@ class TradingModelTrainer:
             # Update learning rate
             scheduler.step(avg_val_loss)
 
+            # Call progress callback if provided
+            if progress_callback:
+                progress_percentage = min(95, 30 + (epoch / epochs) * 65)  # 30% to 95% during training
+                progress_callback({
+                    'epoch': epoch + 1,
+                    'total_epochs': epochs,
+                    'train_loss': avg_train_loss,
+                    'val_loss': avg_val_loss,
+                    'val_accuracy': val_accuracy,
+                    'progress': progress_percentage
+                })
+
             # Print progress
             if epoch % 5 == 0:
                 print(f'Epoch [{epoch}/{epochs}], Train Loss: {avg_train_loss:.4f}, '
@@ -313,6 +326,8 @@ class TradingModelTrainer:
                 #         sample_outputs = self.model(X_val[:5])
                 #         sample_probs = torch.softmax(sample_outputs, dim=1)
                 #         print(f'Sample predictions probabilities: {sample_probs.cpu().numpy()}')
+        
+        print(f"Final train loss: {train_losses[-1]:.4f}, Final val loss: {val_losses[-1]:.4f}, Final val accuracy: {val_accuracies[-1]:.4f}")
 
         # Store training history
         self.training_history = {
