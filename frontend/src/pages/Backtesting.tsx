@@ -30,7 +30,7 @@ import {
   IconButton,
   Tooltip,
 } from "@mui/material";
-import { PlayArrow, Info } from "@mui/icons-material";
+import { PlayArrow, Info, Download } from "@mui/icons-material";
 import { apiService } from "../services/api";
 import ModernPlot from "../components/ModernPlot";
 import ModelDetailsDialog from "../components/ModelDetailsDialog";
@@ -83,6 +83,7 @@ function Backtesting() {
   const [startDate, setStartDate] = useState("2020-01-01");
   const [endDate, setEndDate] = useState("2025-01-01");
   const [isRunning, setIsRunning] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
   const [results, setResults] = useState<BacktestResults | null>(null);
   const [models, setModels] = useState<TrainedModelDetails[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -126,6 +127,42 @@ function Backtesting() {
       setError("Failed to run backtest");
     } finally {
       setIsRunning(false);
+    }
+  }
+
+  async function exportResults() {
+    if (selectedModels.length === 0) {
+      setError("Please select at least one model");
+      return;
+    }
+
+    setIsExporting(true);
+    setError(null);
+
+    try {
+      const request: BacktestRequest = {
+        symbol,
+        model_ids: selectedModels,
+        initial_capital: initialCapital,
+        start_date: startDate,
+        end_date: endDate,
+      };
+
+      const blob = await apiService.exportBacktestResults(request);
+      
+      // Create a download link
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `backtest_results_${symbol}_${new Date().toISOString().split('T')[0]}.xlsx`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      setError("Failed to export backtest results");
+    } finally {
+      setIsExporting(false);
     }
   }
 
@@ -428,18 +465,33 @@ function Backtesting() {
           </Grid>
 
           <Box sx={{ mt: 3 }}>
-            <Button
-              variant="contained"
-              startIcon={<PlayArrow />}
-              onClick={runBacktest}
-              disabled={isRunning || selectedModels.length === 0}
-              fullWidth
-            >
-              {isRunning ? "Running Backtest..." : "Run Backtest"}
-            </Button>
+            <Grid container spacing={2}>
+              <Grid size={{ xs: 12, md: 6 }}>
+                <Button
+                  variant="contained"
+                  startIcon={<PlayArrow />}
+                  onClick={runBacktest}
+                  disabled={isRunning || selectedModels.length === 0}
+                  fullWidth
+                >
+                  {isRunning ? "Running Backtest..." : "Run Backtest"}
+                </Button>
+              </Grid>
+              <Grid size={{ xs: 12, md: 6 }}>
+                <Button
+                  variant="outlined"
+                  startIcon={<Download />}
+                  onClick={exportResults}
+                  disabled={isExporting || selectedModels.length === 0}
+                  fullWidth
+                >
+                  {isExporting ? "Exporting..." : "Export Excel"}
+                </Button>
+              </Grid>
+            </Grid>
           </Box>
 
-          {isRunning && (
+          {(isRunning || isExporting) && (
             <Box sx={{ mt: 2 }}>
               <LinearProgress />
             </Box>

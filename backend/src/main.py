@@ -1,6 +1,7 @@
 import traceback
 from fastapi import FastAPI, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 import pandas as pd
 from pydantic import BaseModel
 from typing import Dict, Optional, List
@@ -14,6 +15,7 @@ from google import genai
 from dotenv import load_dotenv
 import pickle
 from fastapi.concurrency import run_in_threadpool
+import tempfile
 
 # For consistency:
 # model_id = the auto-generated job id for a particular model training run
@@ -427,11 +429,8 @@ async def make_prediction(request: PredictionRequest):
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=traceback.format_exc())
-
-# Backtesting endpoints
-@app.post("/backtest")
-async def run_backtest(request: BacktestRequest):
-    """Run backtesting comparison with multiple models"""
+    
+async def get_backtest_data(request: BacktestRequest):
     try:
         max_sequence_length = 0
         for model_id in request.model_ids:
@@ -453,6 +452,17 @@ async def run_backtest(request: BacktestRequest):
         # Add technical indicators
         padding_data_with_indicators = tech_indicators.calculate_all_indicators(padding_data)
         test_data_with_indicators = tech_indicators.calculate_all_indicators(test_data)
+
+        return padding_data_with_indicators, test_data_with_indicators, max_sequence_length
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=traceback.format_exc())
+
+# Backtesting endpoints
+@app.post("/backtest")
+async def run_backtest(request: BacktestRequest):
+    """Run backtesting comparison with multiple models"""
+    try:
+        padding_data_with_indicators, test_data_with_indicators, max_sequence_length = await get_backtest_data(request)
         
         # Run backtesting
         backtest_engine = BacktestEngine(models)
@@ -476,6 +486,202 @@ async def run_backtest(request: BacktestRequest):
         }
         
     except Exception as e:
+        raise HTTPException(status_code=500, detail=traceback.format_exc())
+
+@app.post("/backtest/export")
+async def export_backtest_results(request: BacktestRequest):
+    """Export backtest results as Excel file with detailed trade information"""
+    
+    def convert_to_timezone_naive(date_obj):
+        """Convert any date object to timezone-naive datetime for Excel compatibility"""
+        if date_obj is None:
+            return None
+        
+        if isinstance(date_obj, str):
+            dt = pd.to_datetime(date_obj)
+        else:
+            dt = date_obj
+        
+        # If it's a pandas Timestamp with timezone
+        if hasattr(dt, 'tz') and dt.tz is not None:
+            return dt.tz_localize(None)
+        # If it's a regular datetime with timezone
+        elif hasattr(dt, 'tzinfo') and dt.tzinfo is not None:
+            return dt.replace(tzinfo=None)
+        # If it's already timezone-naive
+        else:
+            return dt
+    
+    try:
+        padding_data_with_indicators, test_data_with_indicators, max_sequence_length = await get_backtest_data(request)
+        
+        # Run backtesting
+        backtest_engine = BacktestEngine(models)
+        results = backtest_engine.run_comparison(
+            padding_data_with_indicators, 
+            test_data_with_indicators,
+            request.model_ids,
+            request.initial_capital,
+            max_sequence_length
+        )
+        
+        # Generate Excel file
+        temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.xlsx')
+        excel_path = temp_file.name
+        temp_file.close()
+        
+        with pd.ExcelWriter(excel_path, engine='openpyxl') as writer:
+            # Summary sheet with comparison metrics
+            summary_data = []
+            
+            # Add Buy & Hold data
+            bh_data = results['buy_and_hold']
+            summary_data.append({
+                'Strategy': 'Buy & Hold',
+                'Model ID': 'N/A',
+                'Final Value': bh_data['final_value'],
+                'Total Return': bh_data['total_return'],
+                'Total Trades': bh_data['total_trades'],
+                'Sharpe Ratio': bh_data.get('sharpe_ratio', 0),
+                'Max Drawdown': bh_data.get('max_drawdown', 0),
+                'Win Rate': bh_data.get('win_rate', 0),
+                'Volatility': bh_data.get('volatility', 0),
+                'Calmar Ratio': bh_data.get('calmar_ratio', 0)
+            })
+            
+            # Add ML strategies data
+            for model_id in request.model_ids:
+                ml_data = results['ml_strategies'][model_id]
+                model_info = models[model_id]
+                
+                summary_data.append({
+                    'Strategy': model_info['model_name'],
+                    'Model ID': model_id,
+                    'Final Value': ml_data['final_value'],
+                    'Total Return': ml_data['total_return'],
+                    'Total Trades': ml_data['total_trades'],
+                    'Sharpe Ratio': ml_data.get('sharpe_ratio', 0),
+                    'Max Drawdown': ml_data.get('max_drawdown', 0),
+                    'Win Rate': ml_data.get('win_rate', 0),
+                    'Volatility': ml_data.get('volatility', 0),
+                    'Calmar Ratio': ml_data.get('calmar_ratio', 0)
+                })
+            
+            summary_df = pd.DataFrame(summary_data)
+            summary_df.to_excel(writer, sheet_name='Summary', index=False)
+            
+            # Create detailed sheets for each ML model
+            for model_id in request.model_ids:
+                ml_data = results['ml_strategies'][model_id]
+                model_info = models[model_id]
+                
+                trades_data = []
+                portfolio_values = ml_data.get('portfolio_values', [])
+                dates = ml_data.get('dates', [])
+                predictions = ml_data.get('predictions', [])
+                
+                trades_by_date = {}
+                for trade in ml_data.get('trades', []):
+                    trade_date = convert_to_timezone_naive(trade['date'])
+                    # Convert to date for comparison
+                    if hasattr(trade_date, 'date'):
+                        trade_date = trade_date.date()
+                    trades_by_date[trade_date] = trade
+                
+                # Track buy prices for gain/loss calculation
+                buy_price_stack = []  
+                
+                # Create comprehensive daily log 
+                for i, date in enumerate(dates):
+                    portfolio_value = portfolio_values[i]
+                    prediction = predictions[i]
+                    
+                    current_date = convert_to_timezone_naive(date)
+                    if hasattr(current_date, 'date'):
+                        current_date = current_date.date()
+                    
+                    trade_on_date = trades_by_date.get(current_date)
+                    
+                    daily_return = 0
+                    if i > 0 and portfolio_values[i-1] > 0:
+                        daily_return = (portfolio_value - portfolio_values[i-1]) / portfolio_values[i-1]
+                    
+                    gain_loss_amount = 0
+                    gain_loss_pct = 0
+                    
+                    if trade_on_date:
+                        if trade_on_date['action'] in ['BUY', 'INITIAL_BUY']:
+                            # Record buy price for future gain/loss calculation
+                            buy_price_stack.append({
+                                'price': trade_on_date['price'],
+                                'shares': trade_on_date['shares'],
+                                'date': date
+                            })
+                        elif trade_on_date['action'] == 'SELL' and buy_price_stack:
+                            # Calculate gain/loss using most recent buy
+                            last_buy = buy_price_stack.pop()
+                            buy_price = last_buy['price']
+                            sell_price = trade_on_date['price']
+                            shares = trade_on_date['shares']
+                            
+                            gain_loss_amount = (sell_price - buy_price) * shares
+                            gain_loss_pct = ((sell_price - buy_price) / buy_price) * 100
+                    
+                    row = {
+                        'Date': convert_to_timezone_naive(date),
+                        'Portfolio_Value': portfolio_value,
+                        'Daily_Return_Pct': daily_return * 100,
+                        'Prediction': 'UP' if prediction == 1 else 'DOWN' if prediction == 0 else 'N/A',
+                        'Trade_Action': trade_on_date['action'] if trade_on_date else 'HOLD',
+                        'Trade_Shares': trade_on_date['shares'] if trade_on_date else 0,
+                        'Trade_Price': trade_on_date['price'] if trade_on_date else 0,
+                        'Trade_Value': trade_on_date['value'] if trade_on_date else 0,
+                        'Trade_Fee': trade_on_date['fee'] if trade_on_date else 0,
+                        'Gain_Loss_Amount': gain_loss_amount,
+                        'Gain_Loss_Pct': gain_loss_pct
+                    }
+                    
+                    trades_data.append(row)
+                
+                # Create DataFrame and save to sheet
+                model_name = f"{model_info['symbol']}_{model_info['model_type']}"
+                sheet_name = model_name[:31]  # Excel sheet name limit
+                
+                trades_df = pd.DataFrame(trades_data)
+                
+                # Ensure Date column is timezone-naive
+                if 'Date' in trades_df.columns:
+                    trades_df['Date'] = trades_df['Date'].apply(convert_to_timezone_naive)
+                
+                trades_df.to_excel(writer, sheet_name=sheet_name, index=False)
+                
+                # Format the sheet
+                worksheet = writer.sheets[sheet_name]
+                
+                # Auto-adjust column widths
+                for column in worksheet.columns:
+                    max_length = 0
+                    column_letter = column[0].column_letter
+                    for cell in column:
+                        try:
+                            if len(str(cell.value)) > max_length:
+                                max_length = len(str(cell.value))
+                        except:
+                            pass
+                    adjusted_width = min(max_length + 2, 20)
+                    worksheet.column_dimensions[column_letter].width = adjusted_width
+        
+        # Return the file
+        filename = f"backtest_results_{request.symbol}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+        
+        return FileResponse(
+            path=excel_path,
+            filename=filename,
+            media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+        
+    except Exception as e:
+        print(traceback.format_exc())
         raise HTTPException(status_code=500, detail=traceback.format_exc())
 
 # Analysis endpoints and functions

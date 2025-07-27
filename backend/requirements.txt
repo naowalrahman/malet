@@ -11,6 +11,7 @@ contourpy
 curl_cffi
 cycler
 dotenv
+et_xmlfile
 fastapi
 filelock
 fonttools
@@ -46,6 +47,7 @@ nvidia-cusparselt-cu12
 nvidia-nccl-cu12
 nvidia-nvjitlink-cu12
 nvidia-nvtx-cu12
+openpyxl
 packaging
 pandas
 peewee

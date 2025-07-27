@@ -240,6 +240,13 @@ class ApiService {
     return response.data;
   }
 
+  async exportBacktestResults(request: BacktestRequest): Promise<Blob> {
+    const response = await axios.post(`${this.baseURL}/backtest/export`, request, {
+      responseType: "blob",
+    });
+    return response.data;
+  }
+
   // Analysis endpoints
   async getMarketAnalysis(symbols: string[]): Promise<MarketAnalysis[]> {
     const response = await axios.get(`${this.baseURL}/market-analysis`, {
