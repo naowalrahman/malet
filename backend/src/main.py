@@ -644,8 +644,7 @@ async def export_backtest_results(request: BacktestRequest):
                     trades_data.append(row)
                 
                 # Create DataFrame and save to sheet
-                model_name = f"{model_info['symbol']}_{model_info['model_type']}"
-                sheet_name = model_name[:31]  # Excel sheet name limit
+                sheet_name = model_info['model_name'][:31]  # Excel sheet name limit
                 
                 trades_df = pd.DataFrame(trades_data)
                 
