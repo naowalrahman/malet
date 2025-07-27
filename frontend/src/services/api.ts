@@ -38,8 +38,8 @@ export interface TrainingRequest {
   learning_rate: number;
   prediction_horizon: number;
   threshold: number;
-  start_date?: string;
-  end_date?: string;
+  start_date: string;
+  end_date: string;
 }
 
 export interface TrainingJob {
@@ -109,8 +109,8 @@ export interface BacktestRequest {
   symbol: string;
   model_ids: string[];
   initial_capital: number;
-  start_date?: string;
-  end_date?: string;
+  start_date: string;
+  end_date: string;
 }
 
 export interface BacktestResults {

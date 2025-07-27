@@ -191,31 +191,6 @@ function Backtesting() {
                           }
                         }}
                         size="small"
-                        // sx={{
-                        //   "& .MuiToggleButton-root": {
-                        //     px: 2,
-                        //     py: 0.5,
-                        //     fontSize: "0.875rem",
-                        //     fontWeight: 600,
-                        //     border: "1px solid",
-                        //     borderColor: "divider",
-                        //     backgroundColor: "primary.main",
-                        //     color: "text.secondary",
-                        //     "&:hover": {
-                        //       backgroundColor: "primary.dark",
-                        //       borderColor: "primary.main",
-                        //     },
-                        //     "&.Mui-selected": {
-                        //       backgroundColor: "secondary.main",
-                        //       color: "primary.contrastText",
-                        //       borderColor: "primary.main",
-                        //       "&:hover": {
-                        //         backgroundColor: "secondary.dark",
-                        //         borderColor: "secondary.dark",
-                        //       },
-                        //     },
-                        //   },
-                        // }}
                       >
                         {model_ids.map((modelId, index) => {
                           const model = models.find((m) => m.model_id === modelId);

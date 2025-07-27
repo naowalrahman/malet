@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta
 import traceback
 import pandas as pd
 import numpy as np
@@ -30,7 +31,7 @@ class BuyAndHoldStrategy(TradingStrategy):
         first_price = data['Close'].iloc[0]
         last_price = data['Close'].iloc[-1]
         
-        shares = int(self.initial_capital / first_price)
+        shares = self.initial_capital / first_price
         transaction_cost = shares * first_price * self.transaction_cost
         
         final_value = shares * last_price
@@ -88,8 +89,6 @@ class MLTradingStrategy(TradingStrategy):
         try:
             # Get predictions from the model
             predictions = self.model.predict(data)
-            print(f"Predictions: {predictions}")
-            print(f"Unique predictions: {np.unique(predictions)}")
             
             if len(predictions) == 0:
                 return self._empty_results()
@@ -104,14 +103,13 @@ class MLTradingStrategy(TradingStrategy):
             # Align predictions with data (predictions start from sequence_length)
             start_idx = len(data) - len(predictions)
             aligned_data = data.iloc[start_idx:].copy()
-            # Store original dates before resetting index
             original_dates = aligned_data.index.tolist()
             aligned_data = aligned_data.reset_index(drop=True)
 
             # Start by buying shares with initial capital (aggressive strategy)
             if len(predictions) > 0 and len(aligned_data) > 0:
                 first_price = aligned_data['Close'].iloc[0]
-                initial_shares = int(current_capital / first_price)
+                initial_shares = current_capital / first_price
                 if initial_shares > 0:
                     cost = initial_shares * first_price
                     transaction_fee = cost * self.transaction_cost
@@ -121,7 +119,7 @@ class MLTradingStrategy(TradingStrategy):
                     transaction_costs += transaction_fee
                     
                     trades.append({
-                        'date': original_dates[0] if original_dates else 0,
+                        'date': original_dates[0],
                         'action': 'INITIAL_BUY',
                         'shares': initial_shares,
                         'price': first_price,
@@ -139,7 +137,7 @@ class MLTradingStrategy(TradingStrategy):
                 # Trading logic based on binary predictions
                 # 0: Down (Sell), 1: Up (Buy)
                 if prediction == 1 and current_shares == 0:  # Buy signal (price going up)
-                    shares_to_buy = int(current_capital / current_price)
+                    shares_to_buy = current_capital / current_price
                     if shares_to_buy > 0:
                         cost = shares_to_buy * current_price
                         transaction_fee = cost * self.transaction_cost
@@ -150,7 +148,7 @@ class MLTradingStrategy(TradingStrategy):
                             transaction_costs += transaction_fee
                             
                             trades.append({
-                                'date': original_dates[i] if i < len(original_dates) else i,
+                                'date': original_dates[i],
                                 'action': 'BUY',
                                 'shares': shares_to_buy,
                                 'price': current_price,
@@ -166,7 +164,7 @@ class MLTradingStrategy(TradingStrategy):
                     transaction_costs += transaction_fee
                     
                     trades.append({
-                        'date': original_dates[i] if i < len(original_dates) else i,
+                        'date': original_dates[i],
                         'action': 'SELL',
                         'shares': current_shares,
                         'price': current_price,
@@ -201,7 +199,7 @@ class MLTradingStrategy(TradingStrategy):
                 'transaction_costs': transaction_costs,
                 'trades': trades,
                 'portfolio_values': portfolio_values,
-                'dates': original_dates[:len(portfolio_values)] if 'original_dates' in locals() else list(range(len(portfolio_values))),
+                'dates': original_dates,
                 'predictions': predictions.tolist() if hasattr(predictions, 'tolist') else list(predictions)
             }
             
@@ -232,32 +230,25 @@ class BacktestEngine:
         self.results = {}
         self.models = models
         
-    def run_comparison(self, data: pd.DataFrame, model_ids: List[str], initial_capital: float = 10000) -> Dict:
+    def run_comparison(self, padding_data: pd.DataFrame, test_data: pd.DataFrame, model_ids: List[str], initial_capital: float = 10000, max_sequence_length: int = 0) -> Dict:
         """
         Run comparison between Buy & Hold and multiple ML strategies
         """
-        
-        # Store results for each model
         ml_results = {}
-        
-        start_idx = 0
 
+        # run backtest for each model
         for model_id in model_ids:
             ml_strategy = MLTradingStrategy(self.models[model_id]["trainer"], initial_capital)
-            ml_result = ml_strategy.backtest(data)
+            sequence_length = self.models[model_id]["training_params"]["sequence_length"]
+            # get the last sequence_length days of the padding data and combine with the test data
+            ml_result = ml_strategy.backtest(pd.concat([padding_data.iloc[-sequence_length:], test_data]))
             ml_metrics = self.calculate_metrics(ml_result)
 
-            if ml_result.get('predictions'):
-                predictions_length = len(ml_result['predictions'])
-                start_idx = max(start_idx, len(data) - predictions_length)
-            
             ml_results[model_id] = {**ml_result, **ml_metrics}
-
-        aligned_data = data.iloc[start_idx:].copy()
 
         # Run Buy and Hold strategy once on aligned data
         bh_strategy = BuyAndHoldStrategy(initial_capital)
-        bh_results = bh_strategy.backtest(aligned_data)
+        bh_results = bh_strategy.backtest(test_data)
         bh_metrics = self.calculate_metrics(bh_results)
         
         # Create comparison metrics for each model vs buy and hold

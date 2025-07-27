@@ -108,15 +108,15 @@ class TrainingRequest(BaseModel):
     learning_rate: float = 0.001
     prediction_horizon: int = 5
     threshold: float = 0.02
-    start_date: Optional[str] = None
-    end_date: Optional[str] = None
+    start_date: str
+    end_date: str
 
 class BacktestRequest(BaseModel):
     symbol: str
     model_ids: List[str]
     initial_capital: float = 10000
-    start_date: Optional[str] = None
-    end_date: Optional[str] = None
+    start_date: str
+    end_date: str
 
 class PredictionRequest(BaseModel):
     symbol: str
@@ -236,10 +236,7 @@ async def train_model_background(job_id: str, request: TrainingRequest):
             training_jobs[job_id]["progress"] = 10
             
             # Fetch data
-            if request.start_date and request.end_date:
-                data = data_fetcher.fetch_historical_data(request.symbol, request.start_date, request.end_date)
-            else:
-                data = data_fetcher.fetch_daily_data(request.symbol, "6mo")
+            data = data_fetcher.fetch_historical_data(request.symbol, request.start_date, request.end_date)
             
             if data.empty:
                 training_jobs[job_id]["status"] = "error"
@@ -436,31 +433,35 @@ async def make_prediction(request: PredictionRequest):
 async def run_backtest(request: BacktestRequest):
     """Run backtesting comparison with multiple models"""
     try:
-        # Validate all models exist
+        max_sequence_length = 0
         for model_id in request.model_ids:
             if model_id not in models:
                 raise HTTPException(status_code=404, detail=f"Model {model_id} not found")
+            max_sequence_length = max(max_sequence_length, models[model_id]["training_params"]["sequence_length"])
         
         # Fetch data for backtesting
-        if request.start_date and request.end_date:
-            data = data_fetcher.fetch_historical_data(
-                request.symbol, request.start_date, request.end_date
-            )
-        else:
-            data = data_fetcher.fetch_daily_data(request.symbol, "3mo")
+        test_start_date = datetime.strptime(request.start_date, "%Y-%m-%d")
+        # subtracting 52 weeks from the test start date ensures there is enough padding at the beginning
+        # to account for the maximum permissible sequence length (240 trading days)
+        fetch_start_date = test_start_date - timedelta(weeks=52)
+        padding_data = data_fetcher.fetch_historical_data(request.symbol, fetch_start_date.strftime("%Y-%m-%d"), request.start_date)
+        test_data = data_fetcher.fetch_historical_data(request.symbol, request.start_date, request.end_date)
         
-        if data.empty:
+        if padding_data.empty or test_data.empty:
             raise HTTPException(status_code=404, detail=f"No data found for symbol {request.symbol}")
         
         # Add technical indicators
-        data_with_indicators = tech_indicators.calculate_all_indicators(data)
+        padding_data_with_indicators = tech_indicators.calculate_all_indicators(padding_data)
+        test_data_with_indicators = tech_indicators.calculate_all_indicators(test_data)
         
         # Run backtesting
         backtest_engine = BacktestEngine(models)
         results = backtest_engine.run_comparison(
-            data_with_indicators, 
+            padding_data_with_indicators, 
+            test_data_with_indicators,
             request.model_ids,
-            request.initial_capital
+            request.initial_capital,
+            max_sequence_length
         )
         
         # Generate plots
