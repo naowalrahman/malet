@@ -123,6 +123,7 @@ class BacktestRequest(BaseModel):
 class PredictionRequest(BaseModel):
     symbol: str
     model_id: str
+    date: str
 
 # Initialize components
 data_fetcher = DataFetcher()
@@ -397,7 +398,11 @@ async def make_prediction(request: PredictionRequest):
         trainer = model_info["trainer"]
         
         # Fetch recent data
-        data = data_fetcher.fetch_daily_data(request.symbol, "1mo")
+        data = data_fetcher.fetch_historical_data(
+            request.symbol, 
+            (datetime.strptime(request.date, "%Y-%m-%d") - timedelta(days=trainer.sequence_length)).strftime("%Y-%m-%d"),
+            request.date
+        )
         
         if data.empty:
             raise HTTPException(status_code=404, detail=f"No data found for symbol {request.symbol}")
@@ -428,6 +433,7 @@ async def make_prediction(request: PredictionRequest):
         }
         
     except Exception as e:
+        print(traceback.format_exc())
         raise HTTPException(status_code=500, detail=traceback.format_exc())
     
 async def get_backtest_data(request: BacktestRequest):
@@ -629,16 +635,17 @@ async def export_backtest_results(request: BacktestRequest):
                     
                     row = {
                         'Date': convert_to_timezone_naive(date),
-                        'Portfolio_Value': portfolio_value,
-                        'Daily_Return_Pct': daily_return * 100,
+                        'Ticker Open Price': test_data_with_indicators.loc[date, 'Open'],
+                        'Ticker Close Price': test_data_with_indicators.loc[date, 'Close'],
+                        'Portfolio Value': portfolio_value,
+                        'Daily Return Pct': daily_return * 100,
                         'Prediction': 'UP' if prediction == 1 else 'DOWN' if prediction == 0 else 'N/A',
-                        'Trade_Action': trade_on_date['action'] if trade_on_date else 'HOLD',
-                        'Trade_Shares': trade_on_date['shares'] if trade_on_date else 0,
-                        'Trade_Price': trade_on_date['price'] if trade_on_date else 0,
-                        'Trade_Value': trade_on_date['value'] if trade_on_date else 0,
-                        'Trade_Fee': trade_on_date['fee'] if trade_on_date else 0,
-                        'Gain_Loss_Amount': gain_loss_amount,
-                        'Gain_Loss_Pct': gain_loss_pct
+                        'Trade Action': trade_on_date['action'] if trade_on_date else 'HOLD',
+                        'Trade Shares': trade_on_date['shares'] if trade_on_date else 0,
+                        'Trade Value': trade_on_date['value'] if trade_on_date else 0,
+                        'Trade Fee': trade_on_date['fee'] if trade_on_date else 0,
+                        'Gain/Loss Amount': gain_loss_amount,
+                        'Gain/Loss Pct': gain_loss_pct
                     }
                     
                     trades_data.append(row)
@@ -652,7 +659,7 @@ async def export_backtest_results(request: BacktestRequest):
                 if 'Date' in trades_df.columns:
                     trades_df['Date'] = trades_df['Date'].apply(convert_to_timezone_naive)
                 
-                trades_df.to_excel(writer, sheet_name=sheet_name, index=False)
+                trades_df.to_excel(writer, sheet_name=sheet_name, index=False, freeze_panes=(1, 1))
                 
                 # Format the sheet
                 worksheet = writer.sheets[sheet_name]
