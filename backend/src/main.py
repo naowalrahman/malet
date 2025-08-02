@@ -399,37 +399,25 @@ async def make_prediction(request: PredictionRequest):
         
         # Fetch recent data
         data = data_fetcher.fetch_historical_data(
-            request.symbol, 
-            (datetime.strptime(request.date, "%Y-%m-%d") - timedelta(days=trainer.sequence_length)).strftime("%Y-%m-%d"),
+            request.symbol,
+            (datetime.strptime(request.date, "%Y-%m-%d") - timedelta(days=365)).strftime("%Y-%m-%d"),
             request.date
         )
         
         if data.empty:
             raise HTTPException(status_code=404, detail=f"No data found for symbol {request.symbol}")
         
-        # Add technical indicators
         data_with_indicators = tech_indicators.calculate_all_indicators(data)
-        
-        # Make predictions
         predictions = trainer.predict(data_with_indicators)
         
         if len(predictions) == 0:
             raise HTTPException(status_code=400, detail="Unable to make predictions with current data")
         
-        # Get the latest prediction
-        latest_prediction = int(predictions[-1])
-        confidence = 0.8  # Placeholder - you could calculate actual confidence
-        
-        signal_map = {0: "DOWN", 1: "UP"}
-        
         return {
             "symbol": request.symbol,
             "model_id": request.model_id,
-            "prediction": latest_prediction,
-            "signal": signal_map[latest_prediction],
-            "confidence": confidence,
+            "prediction": "UP" if predictions[-1] == 1 else "DOWN",
             "timestamp": datetime.now().isoformat(),
-            "current_price": float(data["Close"].iloc[-1])
         }
         
     except Exception as e:

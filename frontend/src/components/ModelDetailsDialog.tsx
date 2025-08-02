@@ -21,7 +21,7 @@ interface ModelDetailsDialogProps {
 }
 
 function ModelDetailsDialog({ open, onClose, modelDetails }: ModelDetailsDialogProps) {
-  const formatDate = (dateString: string) => {
+  function formatDate(dateString: string) {
     return new Date(dateString).toLocaleDateString("en-US", {
       year: "numeric",
       month: "long",
@@ -29,18 +29,14 @@ function ModelDetailsDialog({ open, onClose, modelDetails }: ModelDetailsDialogP
       hour: "2-digit",
       minute: "2-digit",
     });
-  };
+  }
 
-  const formatPercentage = (value: number) => {
+  function formatPercentage(value: number) {
     return `${(value * 100).toFixed(2)}%`;
-  };
-
-  const handleClose = () => {
-    onClose();
-  };
+  }
 
   return (
-    <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
+    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
       <DialogTitle>
         <Typography variant="h5" component="div">
           Model Details
@@ -263,7 +259,7 @@ function ModelDetailsDialog({ open, onClose, modelDetails }: ModelDetailsDialogP
       </DialogContent>
 
       <DialogActions>
-        <Button onClick={handleClose}>Close</Button>
+        <Button onClick={onClose}>Close</Button>
       </DialogActions>
     </Dialog>
   );

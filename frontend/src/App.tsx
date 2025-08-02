@@ -18,6 +18,7 @@ import DataExplorer from "./pages/DataExplorer";
 import ModelTraining from "./pages/Training";
 import Backtesting from "./pages/Backtesting";
 import LiveTrading from "./pages/LiveTrading";
+import Predict from "./pages/Predict";
 
 // Modern dark theme with sleek gray-blue tones
 const theme = createTheme({
@@ -286,6 +287,7 @@ function App() {
               <Route path="/data" element={<DataExplorer />} />
               <Route path="/training" element={<ModelTraining />} />
               <Route path="/backtesting" element={<Backtesting />} />
+              <Route path="/predict" element={<Predict />} />
               <Route path="/live" element={<LiveTrading />} />
             </Routes>
           </Box>

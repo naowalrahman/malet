@@ -4,6 +4,7 @@ import {
   Dashboard as DashboardIcon,
   ModelTraining as TrainingIcon,
   Assessment as BacktestIcon,
+  Psychology as PredictIcon,
   MoreVert as MoreIcon,
   GitHub as GitHubIcon,
 } from "@mui/icons-material";
@@ -27,6 +28,7 @@ function Navbar() {
     // { path: "/data", label: "Data Explorer", icon: <DataIcon /> },
     { path: "/training", label: "Model Training", icon: <TrainingIcon /> },
     { path: "/backtesting", label: "Backtesting", icon: <BacktestIcon /> },
+    { path: "/predict", label: "Predict", icon: <PredictIcon /> },
     // { path: "/live", label: "Live Trading", icon: <LiveIcon /> },
   ];
 

@@ -255,14 +255,6 @@ function ModernPlot({
   // Enhanced configuration with modern interactions
   const defaultConfig: Partial<Plotly.Config> = {
     displayModeBar: true,
-    modeBarButtonsToRemove: [
-      "pan2d",
-      "lasso2d",
-      "select2d",
-      "hoverClosestCartesian",
-      "hoverCompareCartesian",
-      "toggleSpikelines",
-    ] as any,
     displaylogo: false,
     responsive: true,
     toImageButtonOptions: {
@@ -272,7 +264,7 @@ function ModernPlot({
       width: 1200,
       scale: 2,
     },
-    modeBarButtons: [["zoom2d", "zoomIn2d", "zoomOut2d", "autoScale2d", "resetScale2d"], ["toImage"]] as any,
+    modeBarButtons: [["zoom2d", "zoomIn2d", "zoomOut2d", "autoScale2d", "resetScale2d"], ["hoverClosestCartesian", "hoverCompareCartesian" ], ["toImage"]] as any,
     ...config,
   };
 

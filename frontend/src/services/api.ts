@@ -98,11 +98,8 @@ export interface TrainedModelDetails {
 export interface Prediction {
   symbol: string;
   model_id: string;
-  prediction: number;
-  signal: string;
-  confidence: number;
+  prediction: string;
   timestamp: string;
-  current_price: number;
 }
 
 export interface BacktestRequest {
@@ -226,10 +223,11 @@ class ApiService {
   }
 
   // Prediction endpoints
-  async makePrediction(symbol: string, modelId: string): Promise<Prediction> {
+  async makePrediction(symbol: string, modelId: string, date: string): Promise<Prediction> {
     const response = await axios.post(`${this.baseURL}/predict`, {
       symbol,
       model_id: modelId,
+      date,
     });
     return response.data;
   }
