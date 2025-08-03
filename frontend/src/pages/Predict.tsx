@@ -61,6 +61,15 @@ function Predict() {
     fetchModels();
   }, []);
 
+  function getNextWeekday(): Dayjs {
+    const today = dayjs();
+    const currentDay = today.day();
+    
+    const daysToAdd = currentDay === 0 ? 1 : currentDay >= 5 ? 8 - currentDay : 1;
+    
+    return today.add(daysToAdd, 'day');
+  }
+
   function handleInputChange(field: keyof PredictFormData, value: any) {
     setFormData((prev) => ({ ...prev, [field]: value }));
     setError(null);
@@ -193,11 +202,12 @@ function Predict() {
                   label="Prediction Date"
                   value={formData.date}
                   onChange={(newDate) => handleInputChange("date", newDate)}
-                  maxDate={dayjs()}
+                  maxDate={getNextWeekday()}
+                  shouldDisableDate={(date: Dayjs) => date.day() === 0 || date.day() === 6}
                   slotProps={{
                     textField: {
                       fullWidth: true,
-                      helperText: "Select the date for prediction",
+                      helperText: "Select a weekday for prediction (up to next trading day)",
                     },
                   }}
                 />
