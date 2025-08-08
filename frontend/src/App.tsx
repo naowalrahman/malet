@@ -2,6 +2,7 @@ import { ThemeProvider, createTheme } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { Box } from "@mui/material";
+
 import "@fontsource/inter/100.css";
 import "@fontsource/inter/200.css";
 import "@fontsource/inter/300.css";
