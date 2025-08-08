@@ -33,6 +33,10 @@ import {
   LinearProgress,
   Paper,
 } from "@mui/material";
+import { DatePicker } from "@mui/x-date-pickers/DatePicker";
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import dayjs, { Dayjs } from "dayjs";
 import { PlayArrow, Download, Delete, ExpandMore, Info } from "@mui/icons-material";
 import { apiService } from "../services/api";
 import type { ModelDetails, TrainedModelDetails, TrainingRequest } from "../services/api";
@@ -50,8 +54,8 @@ function ModelTraining() {
   const [sequenceLength, setSequenceLength] = useState(120);
   const [predictionHorizon] = useState(5);
   const [threshold] = useState(0.02);
-  const [startDate, setStartDate] = useState("2010-01-01");
-  const [endDate, setEndDate] = useState("2020-01-01");
+  const [startDate, setStartDate] = useState<Dayjs>(dayjs("2010-01-01"));
+  const [endDate, setEndDate] = useState<Dayjs>(dayjs("2020-01-01"));
 
   const [isTraining, setIsTraining] = useState(false);
   const [currentModelId, setCurrentModelId] = useState<string | null>(null);
@@ -119,8 +123,8 @@ function ModelTraining() {
         sequence_length: sequenceLength,
         prediction_horizon: predictionHorizon,
         threshold,
-        start_date: startDate,
-        end_date: endDate,
+        start_date: startDate.format("YYYY-MM-DD"),
+        end_date: endDate.format("YYYY-MM-DD"),
       };
 
       // Start training and get job ID
@@ -252,34 +256,30 @@ function ModelTraining() {
             </Grid>
 
             <Grid size={{ xs: 12, md: 6 }}>
-              <TextField
-                fullWidth
+              <DatePicker
                 label="Training Start Date"
-                type="date"
                 value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
+                onChange={(newDate) => newDate && setStartDate(newDate)}
                 slotProps={{
-                  inputLabel: {
-                    shrink: true,
+                  textField: {
+                    fullWidth: true,
+                    margin: "normal",
                   },
                 }}
-                margin="normal"
               />
             </Grid>
 
             <Grid size={{ xs: 12, md: 6 }}>
-              <TextField
-                fullWidth
+              <DatePicker
                 label="Training End Date"
-                type="date"
                 value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
+                onChange={(newDate) => newDate && setEndDate(newDate)}
                 slotProps={{
-                  inputLabel: {
-                    shrink: true,
+                  textField: {
+                    fullWidth: true,
+                    margin: "normal",
                   },
                 }}
-                margin="normal"
               />
             </Grid>
 
@@ -568,7 +568,8 @@ function ModelTraining() {
   }
 
   return (
-    <Box
+    <LocalizationProvider dateAdapter={AdapterDayjs}>
+      <Box
       sx={{
         display: "flex",
         justifyContent: "center",
@@ -689,6 +690,7 @@ function ModelTraining() {
         </Dialog>
       </Container>
     </Box>
+    </LocalizationProvider>
   );
 }
 

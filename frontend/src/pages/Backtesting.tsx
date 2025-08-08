@@ -30,6 +30,10 @@ import {
   IconButton,
   Tooltip,
 } from "@mui/material";
+import { DatePicker } from "@mui/x-date-pickers/DatePicker";
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import dayjs, { Dayjs } from "dayjs";
 import { PlayArrow, Info, Download } from "@mui/icons-material";
 import { apiService } from "../services/api";
 import ModernPlot from "../components/ModernPlot";
@@ -80,8 +84,8 @@ function Backtesting() {
   const [symbol, setSymbol] = useState("SPY");
   const [selectedModels, setSelectedModels] = useState<string[]>([]);
   const [initialCapital, setInitialCapital] = useState(10000);
-  const [startDate, setStartDate] = useState("2020-01-01");
-  const [endDate, setEndDate] = useState("2025-01-01");
+  const [startDate, setStartDate] = useState<Dayjs>(dayjs("2020-01-01"));
+  const [endDate, setEndDate] = useState<Dayjs>(dayjs("2025-01-01"));
   const [isRunning, setIsRunning] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [results, setResults] = useState<BacktestResults | null>(null);
@@ -118,8 +122,8 @@ function Backtesting() {
         symbol,
         model_ids: selectedModels,
         initial_capital: initialCapital,
-        start_date: startDate,
-        end_date: endDate,
+        start_date: startDate.format("YYYY-MM-DD"),
+        end_date: endDate.format("YYYY-MM-DD"),
       };
 
       setResults(await apiService.runBacktest(request));
@@ -144,8 +148,8 @@ function Backtesting() {
         symbol,
         model_ids: selectedModels,
         initial_capital: initialCapital,
-        start_date: startDate,
-        end_date: endDate,
+        start_date: startDate.format("YYYY-MM-DD"),
+        end_date: endDate.format("YYYY-MM-DD"),
       };
 
       const blob = await apiService.exportBacktestResults(request);
@@ -434,30 +438,26 @@ function Backtesting() {
             </Grid>
 
             <Grid size={{ xs: 12, md: 4 }}>
-              <TextField
-                fullWidth
+              <DatePicker
                 label="Start Date"
-                type="date"
                 value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
+                onChange={(newDate) => newDate && setStartDate(newDate)}
                 slotProps={{
-                  inputLabel: {
-                    shrink: true,
+                  textField: {
+                    fullWidth: true,
                   },
                 }}
               />
             </Grid>
 
             <Grid size={{ xs: 12, md: 4 }}>
-              <TextField
-                fullWidth
+              <DatePicker
                 label="End Date"
-                type="date"
                 value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
+                onChange={(newDate) => newDate && setEndDate(newDate)}
                 slotProps={{
-                  inputLabel: {
-                    shrink: true,
+                  textField: {
+                    fullWidth: true,
                   },
                 }}
               />
@@ -628,7 +628,8 @@ function Backtesting() {
   }
 
   return (
-    <Box
+    <LocalizationProvider dateAdapter={AdapterDayjs}>
+      <Box
       sx={{
         display: "flex",
         justifyContent: "center",
@@ -670,6 +671,7 @@ function Backtesting() {
         />
       </Container>
     </Box>
+    </LocalizationProvider>
   );
 }
 
