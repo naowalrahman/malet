@@ -22,6 +22,12 @@ import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { TrendingUp, TrendingDown, Psychology } from "@mui/icons-material";
 import dayjs, { Dayjs } from "dayjs";
+import timezone from "dayjs/plugin/timezone";
+import utc from "dayjs/plugin/utc";
+
+dayjs.extend(timezone);
+dayjs.extend(utc);
+
 import { apiService, type TrainedModelDetails, type Prediction } from "../services/api";
 
 interface PredictFormData {
@@ -34,7 +40,7 @@ function Predict() {
   const [formData, setFormData] = useState<PredictFormData>({
     symbol: "",
     modelId: "",
-    date: dayjs(),
+    date: dayjs(), // default to today
   });
   const [models, setModels] = useState<TrainedModelDetails[]>([]);
   const [prediction, setPrediction] = useState<Prediction | null>(null);
@@ -61,13 +67,29 @@ function Predict() {
     fetchModels();
   }, []);
 
-  function getNextWeekday(): Dayjs {
-    const today = dayjs();
-    const currentDay = today.day();
-    
-    const daysToAdd = currentDay === 0 ? 1 : currentDay >= 5 ? 8 - currentDay : 1;
-    
-    return today.add(daysToAdd, 'day');
+  function getMaxPredictDate(): Dayjs {
+    const now = dayjs().tz("America/New_York");
+    const currentDay = now.day();
+    const marketCloseHour = 16; // 4:00 PM EST
+
+    // If today is a weekend, next trading day is Monday
+    if (currentDay === 6) { // Saturday
+      return now.add(2, 'day').startOf('day');
+    }
+    if (currentDay === 0) { // Sunday
+      return now.add(1, 'day').startOf('day');
+    }
+
+    // If today is a weekday but before market close, can't predict for today yet
+    if (now.hour() < marketCloseHour) {
+      return now.startOf('day');
+    }
+
+    // If after market close, next trading day is tomorrow (unless Friday)
+    if (currentDay === 5) { // Friday
+      return now.add(3, 'day').startOf('day');
+    }
+    return now.add(1, 'day').startOf('day');
   }
 
   function handleInputChange(field: keyof PredictFormData, value: any) {
@@ -202,7 +224,7 @@ function Predict() {
                   label="Prediction Date"
                   value={formData.date}
                   onChange={(newDate) => handleInputChange("date", newDate)}
-                  maxDate={getNextWeekday()}
+                  maxDate={getMaxPredictDate()}
                   shouldDisableDate={(date: Dayjs) => date.day() === 0 || date.day() === 6}
                   slotProps={{
                     textField: {
