@@ -37,6 +37,9 @@ class LSTM(nn.Module):
         c0 = torch.zeros(self.num_layers, batch_size, self.hidden_size, 
                         device=x.device, dtype=x.dtype)
 
+        # Ensure RNN parameters are in a contiguous chunk to avoid warnings and improve performance
+        self.lstm.flatten_parameters()
+
         # Forward propagate LSTM
         out, _ = self.lstm(x, (h0, c0))
 

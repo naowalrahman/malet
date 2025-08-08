@@ -49,6 +49,7 @@ class CNN_LSTM(nn.Module):
         x = x.permute(0, 2, 1)
 
         # LSTM layers
+        self.lstm.flatten_parameters()
         lstm_out, _ = self.lstm(x)
 
         # Take last output

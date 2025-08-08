@@ -57,7 +57,7 @@ class TradingModelTrainer:
                 feature_df = feature_df.drop(columns=[col])
             else:
                 # Forward fill first, then backward fill, then fill remaining with median
-                feature_df[col] = feature_df[col].fillna(method='ffill').fillna(method='bfill')
+                feature_df[col] = feature_df[col].ffill().bfill()
                 if feature_df[col].isna().any():
                     median_val = feature_df[col].median()
                     if pd.isna(median_val):
@@ -403,7 +403,7 @@ class TradingModelTrainer:
         feature_df = feature_df[self.feature_columns]
         
         # Handle any remaining NaN values
-        feature_df = feature_df.fillna(method='ffill').fillna(method='bfill').fillna(0)
+        feature_df = feature_df.ffill().bfill().fillna(0)
 
         # Scale features
         features_scaled = self.scaler.transform(feature_df)

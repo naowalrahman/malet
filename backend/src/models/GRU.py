@@ -36,6 +36,9 @@ class GRU(nn.Module):
         h0 = torch.zeros(self.num_layers, batch_size, self.hidden_size, 
                         device=x.device, dtype=x.dtype)
 
+        # Ensure RNN parameters are in a contiguous chunk to avoid warnings and improve performance
+        self.gru.flatten_parameters()
+
         # Forward propagate GRU
         gru_out, _ = self.gru(x, h0)
 
