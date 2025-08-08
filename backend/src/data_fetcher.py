@@ -1,11 +1,8 @@
 import traceback
 import yfinance as yf
 import pandas as pd
-import numpy as np
-from datetime import datetime, timedelta
-from typing import List, Dict, Optional, Tuple, Literal
-import warnings
-warnings.filterwarnings('ignore')
+from datetime import timedelta
+from typing import List, Dict, Literal
 
 class DataFetcher:
     """
