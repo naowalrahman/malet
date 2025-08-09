@@ -80,7 +80,7 @@ function Predict() {
       return now.add(1, 'day').startOf('day');
     }
 
-    // If today is a weekday but before market close, can't predict for today yet
+    // If today is a weekday but before market close, can't predict for tomorrow yet
     if (now.hour() < marketCloseHour) {
       return now.startOf('day');
     }
