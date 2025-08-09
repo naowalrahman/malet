@@ -153,12 +153,12 @@ function Backtesting() {
       };
 
       const blob = await apiService.exportBacktestResults(request);
-      
+
       // Create a download link
       const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
+      const link = document.createElement("a");
       link.href = url;
-      link.download = `backtest_results_${symbol}_${new Date().toISOString().split('T')[0]}.xlsx`;
+      link.download = `backtest_results_${symbol}_${new Date().toISOString().split("T")[0]}.xlsx`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -630,47 +630,47 @@ function Backtesting() {
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs}>
       <Box
-      sx={{
-        display: "flex",
-        justifyContent: "center",
-        minHeight: "100vh",
-        py: 4,
-        backgroundColor: "background.default",
-      }}
-    >
-      <Container maxWidth="xl">
-        <Box sx={{ mb: 4, textAlign: "center" }}>
-          <Typography variant="h3" component="h1" gutterBottom fontWeight={700}>
-            Backtesting
-          </Typography>
-          <Typography variant="body1" color="text.secondary">
-            Test your ML models against historical data to evaluate performance
-          </Typography>
-        </Box>
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          minHeight: "100vh",
+          py: 4,
+          backgroundColor: "background.default",
+        }}
+      >
+        <Container maxWidth="xl">
+          <Box sx={{ mb: 4, textAlign: "center" }}>
+            <Typography variant="h3" component="h1" gutterBottom fontWeight={700}>
+              Backtesting
+            </Typography>
+            <Typography variant="body1" color="text.secondary">
+              Test your ML models against historical data to evaluate performance
+            </Typography>
+          </Box>
 
-        {error && (
-          <Alert severity="error" sx={{ mb: 3 }}>
-            {error}
-          </Alert>
-        )}
+          {error && (
+            <Alert severity="error" sx={{ mb: 3 }}>
+              {error}
+            </Alert>
+          )}
 
-        <Box sx={{ minWidth: 800 }}>
-          {renderConfiguration()}
-          {renderResults()}
-          {renderPlots()}
-        </Box>
+          <Box sx={{ minWidth: 800 }}>
+            {renderConfiguration()}
+            {renderResults()}
+            {renderPlots()}
+          </Box>
 
-        {/* Model Details Dialog */}
-        <ModelDetailsDialog
-          open={detailsDialogOpen}
-          onClose={() => {
-            setDetailsDialogOpen(false);
-            setSelectedModelForDetails(null);
-          }}
-          modelDetails={selectedModelForDetails}
-        />
-      </Container>
-    </Box>
+          {/* Model Details Dialog */}
+          <ModelDetailsDialog
+            open={detailsDialogOpen}
+            onClose={() => {
+              setDetailsDialogOpen(false);
+              setSelectedModelForDetails(null);
+            }}
+            modelDetails={selectedModelForDetails}
+          />
+        </Container>
+      </Box>
     </LocalizationProvider>
   );
 }

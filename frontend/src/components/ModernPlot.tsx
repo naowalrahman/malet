@@ -264,7 +264,11 @@ function ModernPlot({
       width: 1200,
       scale: 2,
     },
-    modeBarButtons: [["zoom2d", "zoomIn2d", "zoomOut2d", "autoScale2d", "resetScale2d"], ["hoverClosestCartesian", "hoverCompareCartesian" ], ["toImage"]] as any,
+    modeBarButtons: [
+      ["zoom2d", "zoomIn2d", "zoomOut2d", "autoScale2d", "resetScale2d"],
+      ["hoverClosestCartesian", "hoverCompareCartesian"],
+      ["toImage"],
+    ] as any,
     ...config,
   };
 

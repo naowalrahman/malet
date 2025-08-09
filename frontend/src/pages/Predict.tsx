@@ -73,23 +73,26 @@ function Predict() {
     const marketCloseHour = 16; // 4:00 PM EST
 
     // If today is a weekend, next trading day is Monday
-    if (currentDay === 6) { // Saturday
-      return now.add(2, 'day').startOf('day');
+    if (currentDay === 6) {
+      // Saturday
+      return now.add(2, "day").startOf("day");
     }
-    if (currentDay === 0) { // Sunday
-      return now.add(1, 'day').startOf('day');
+    if (currentDay === 0) {
+      // Sunday
+      return now.add(1, "day").startOf("day");
     }
 
     // If today is a weekday but before market close, can't predict for tomorrow yet
     if (now.hour() < marketCloseHour) {
-      return now.startOf('day');
+      return now.startOf("day");
     }
 
     // If after market close, next trading day is tomorrow (unless Friday)
-    if (currentDay === 5) { // Friday
-      return now.add(3, 'day').startOf('day');
+    if (currentDay === 5) {
+      // Friday
+      return now.add(3, "day").startOf("day");
     }
-    return now.add(1, 'day').startOf('day');
+    return now.add(1, "day").startOf("day");
   }
 
   function handleInputChange(field: keyof PredictFormData, value: any) {
@@ -163,7 +166,8 @@ function Predict() {
                     fontSize: "1rem",
                     fontWeight: "bold",
                     height: "40px",
-                  }} />
+                  }}
+                />
               </Paper>
             </Grid>
 
@@ -172,17 +176,12 @@ function Predict() {
                 <Typography variant="body2" color="text.secondary" gutterBottom>
                   Prediction Time
                 </Typography>
-                <Typography variant="body1">
-                  {new Date(prediction.timestamp).toLocaleString()}
-                </Typography>
+                <Typography variant="body1">{new Date(prediction.timestamp).toLocaleString()}</Typography>
               </Paper>
             </Grid>
           </Grid>
 
-          <Alert
-            severity={isUpPrediction ? "success" : "warning"}
-            sx={{ mt: 2 }}
-          >
+          <Alert severity={isUpPrediction ? "success" : "warning"} sx={{ mt: 2 }}>
             <Typography variant="body2">
               <strong>Model Prediction:</strong> The AI model predicts that {prediction.symbol} will trend{" "}
               <strong>{prediction.prediction}</strong> based on the selected date and historical data patterns.
@@ -251,10 +250,8 @@ function Predict() {
                             {model.symbol} - {model.model_type.toUpperCase()}
                           </Typography>
                           <Typography variant="caption" color="text.secondary">
-                            Trained: {new Date(model.created_at).toLocaleDateString()} •{" "}
-                            Accuracy: {model.accuracy ? 
-                              (model.accuracy * 100).toFixed(1) + "%" : 
-                              "N/A"}
+                            Trained: {new Date(model.created_at).toLocaleDateString()} • Accuracy:{" "}
+                            {model.accuracy ? (model.accuracy * 100).toFixed(1) + "%" : "N/A"}
                           </Typography>
                         </Box>
                       </MenuItem>
