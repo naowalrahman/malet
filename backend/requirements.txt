@@ -89,3 +89,4 @@ urllib3
 uvicorn
 websockets
 yfinance
+alpaca-py
