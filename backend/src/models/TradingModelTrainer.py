@@ -452,20 +452,4 @@ class TradingModelTrainer:
             'scaler': self.scaler,
             'training_history': self.training_history
         }, filepath)
-
-    def load_model(self, filepath: str):
-        """
-        Load a trained model
-        """
-        checkpoint = torch.load(filepath, map_location=self.device)
-
-        self.model_type = checkpoint['model_type']
-        self.sequence_length = checkpoint['sequence_length']
-        self.feature_columns = checkpoint['feature_columns']
-        self.scaler = checkpoint['scaler']
-        self.training_history = checkpoint.get('training_history', [])
-
-        # Initialize and load model
-        if len(self.feature_columns) > 0:
-            self.initialize_model(len(self.feature_columns))
-            self.model.load_state_dict(checkpoint['model_state_dict'])
+        
