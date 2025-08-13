@@ -70,6 +70,10 @@ class DataFetcher:
             data = data.dropna()
             data.index = pd.to_datetime(data.index)
             data['Symbol'] = symbol
+
+            print("DATA RANGE:")
+            print(data.first())
+            print(data.last())
             
             return data
             
