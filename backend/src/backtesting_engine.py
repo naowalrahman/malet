@@ -104,7 +104,6 @@ class MLTradingStrategy(TradingStrategy):
             start_idx = len(data) - len(predictions)
             aligned_data = data.iloc[start_idx:].copy()
             original_dates = aligned_data.index.tolist()
-            aligned_data = aligned_data.reset_index(drop=True)
 
             # Start by buying shares with initial capital (aggressive strategy)
             if len(predictions) > 0 and len(aligned_data) > 0:

@@ -21,7 +21,7 @@ async def make_prediction(request: PredictionRequest):
 
         data = data_fetcher.fetch_historical_data(
             request.symbol,
-            (datetime.strptime(request.date, "%Y-%m-%d") - timedelta(days=365)).strftime("%Y-%m-%d"),
+            (datetime.strptime(request.date, "%Y-%m-%d") - timedelta(weeks=52)).strftime("%Y-%m-%d"),
             request.date,
         )
 
