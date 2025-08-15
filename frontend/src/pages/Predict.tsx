@@ -131,6 +131,24 @@ function Predict() {
     const color = isUpPrediction ? "success" : "error";
     const confidencePct = (prediction.confidence * 100).toFixed(1) + "%";
 
+    function PredictionInfo(props: { children: React.ReactNode, name: string }) {
+      return <Paper elevation={2} sx={{
+        flex: "1 1 220px",
+        minWidth: 180,
+        p: 2,
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        bgcolor: "background.default",
+      }}>
+        <Typography variant="caption" color="text.secondary" gutterBottom>
+          {props.name}
+        </Typography>
+        {props.children}
+      </Paper>;
+    }
+
     return (
       <Card sx={{ mt: 3 }}>
         <CardContent>
@@ -141,61 +159,50 @@ function Predict() {
             </Typography>
           </Box>
 
-          <Grid container spacing={2}>
-            <Grid size={{ xs: 12, md: 6 }}>
-              <Paper sx={{ p: 2, textAlign: "center" }}>
-                <Typography variant="body2" color="text.secondary" gutterBottom>
-                  Symbol
-                </Typography>
-                <Typography variant="h6" fontWeight="bold">
-                  {prediction.symbol}
-                </Typography>
-              </Paper>
-            </Grid>
+          <Box
+            sx={{
+              display: "flex",
+              flexWrap: "wrap",
+              gap: 2,
+              justifyContent: { xs: "center", md: "flex-start" },
+              alignItems: "stretch",
+              mb: 2,
+            }}
+          >
+            <PredictionInfo name="Symbol">
+              <Typography variant="h6" fontWeight={700}>
+                {prediction.symbol}
+              </Typography>
+            </PredictionInfo>
 
-            <Grid size={{ xs: 12, md: 6 }}>
-              <Paper sx={{ p: 2, textAlign: "center" }}>
-                <Typography variant="body2" color="text.secondary" gutterBottom>
-                  Prediction
-                </Typography>
-                <Chip
-                  icon={icon}
-                  label={prediction.prediction}
-                  color={color}
-                  variant="filled"
-                  sx={{
-                    fontSize: "1rem",
-                    fontWeight: "bold",
-                    height: "40px",
-                  }}
-                />
-              </Paper>
-            </Grid>
+            <PredictionInfo name="Prediction">
+              <Chip
+                icon={icon}
+                label={prediction.prediction}
+                color={color}
+                variant="filled"
+                sx={{ fontSize: "1rem", fontWeight: "bold" }}
+              />
+            </PredictionInfo>
 
-            <Grid size={{ xs: 12, md: 6 }}>
-              <Paper sx={{ p: 2, textAlign: "center" }}>
-                <Typography variant="body2" color="text.secondary" gutterBottom>
-                  Confidence
-                </Typography>
-                <Typography variant="h6" fontWeight="bold">
-                  {confidencePct}
-                </Typography>
-              </Paper>
-            </Grid>
+            <PredictionInfo name="Confidence">
+              <Typography variant="h6" fontWeight={700}>
+                {confidencePct}
+              </Typography>
+            </PredictionInfo>
+          </Box>
 
-            <Grid size={{ xs: 12 }}>
-              <Paper sx={{ p: 2 }}>
-                <Typography variant="body2" color="text.secondary" gutterBottom>
-                  Prediction Time
-                </Typography>
-                <Typography variant="body1">{new Date(prediction.timestamp).toLocaleString()}</Typography>
-              </Paper>
-            </Grid>
-          </Grid>
+          <Box sx={{ mt: 2 }}>
+            <PredictionInfo name="Prediction Timestamp">
+              <Typography variant="body2" color="text.primary">
+                {new Date(prediction.timestamp).toLocaleString()}
+              </Typography>
+            </PredictionInfo>
+          </Box>
 
           <Alert severity={isUpPrediction ? "success" : "warning"} sx={{ mt: 2 }}>
             <Typography variant="body2">
-              <strong>Model Prediction:</strong> The AI model predicts that {prediction.symbol} will trend{" "}
+              <strong>Model Response:</strong> The AI model predicts that {prediction.symbol} will trend{" "}
               <strong>{prediction.prediction}</strong> based on the selected date and historical data patterns.
             </Typography>
           </Alert>
