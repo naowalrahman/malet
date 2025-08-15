@@ -99,6 +99,7 @@ export interface Prediction {
   symbol: string;
   model_id: string;
   prediction: string;
+  confidence: number;
   timestamp: string;
 }
 

@@ -129,6 +129,7 @@ function Predict() {
     const isUpPrediction = prediction.prediction === "UP";
     const icon = isUpPrediction ? <TrendingUp /> : <TrendingDown />;
     const color = isUpPrediction ? "success" : "error";
+    const confidencePct = (prediction.confidence * 100).toFixed(1) + "%";
 
     return (
       <Card sx={{ mt: 3 }}>
@@ -168,6 +169,17 @@ function Predict() {
                     height: "40px",
                   }}
                 />
+              </Paper>
+            </Grid>
+
+            <Grid size={{ xs: 12, md: 6 }}>
+              <Paper sx={{ p: 2, textAlign: "center" }}>
+                <Typography variant="body2" color="text.secondary" gutterBottom>
+                  Confidence
+                </Typography>
+                <Typography variant="h6" fontWeight="bold">
+                  {confidencePct}
+                </Typography>
               </Paper>
             </Grid>
 

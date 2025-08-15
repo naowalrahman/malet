@@ -29,7 +29,7 @@ async def make_prediction(request: PredictionRequest):
             raise HTTPException(status_code=404, detail=f"No data found for symbol {request.symbol}")
 
         data_with_indicators = tech_indicators.calculate_all_indicators(data)
-        predictions = trainer.predict(data_with_indicators)
+        predictions, confidences = trainer.predict(data_with_indicators)
 
         if len(predictions) == 0:
             raise HTTPException(status_code=400, detail="Unable to make predictions with current data")
@@ -38,6 +38,7 @@ async def make_prediction(request: PredictionRequest):
             "symbol": request.symbol,
             "model_id": request.model_id,
             "prediction": "UP" if predictions[-1] == 1 else "DOWN",
+            "confidence": float(confidences[-1]),
             "timestamp": datetime.now().isoformat(),
         }
     except Exception:

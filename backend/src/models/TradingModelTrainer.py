@@ -433,9 +433,10 @@ class TradingModelTrainer:
             #     print(f"Sample probabilities: {probabilities[:5]}")
             #     print(f"Mean probabilities: {torch.mean(probabilities, dim=0)}")
             
-            _, predictions = torch.max(outputs, 1)
+            confidences, predictions = torch.max(probabilities, 1)
 
-        return predictions.cpu().numpy()
+
+        return predictions.cpu().numpy(), confidences.cpu().numpy()
 
     def save_model(self, filepath: str):
         """

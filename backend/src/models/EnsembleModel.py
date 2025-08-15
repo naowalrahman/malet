@@ -49,7 +49,7 @@ class EnsembleModel:
         predictions = {}
 
         for model_type, trainer in self.models.items():
-            pred = trainer.predict(df)
+            pred, _ = trainer.predict(df)
             if len(pred) > 0:
                 predictions[model_type] = pred
 

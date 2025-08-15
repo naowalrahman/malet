@@ -141,6 +141,7 @@ async def export_backtest_results(request: BacktestRequest):
                 portfolio_values = ml_data.get("portfolio_values", [])
                 dates = ml_data.get("dates", [])
                 predictions = ml_data.get("predictions", [])
+                confidences = ml_data.get("confidences", [])
 
                 trades_by_date = {}
                 for trade in ml_data.get("trades", []):
@@ -182,6 +183,8 @@ async def export_backtest_results(request: BacktestRequest):
                             gain_loss_amount = (sell_price - buy_price) * shares
                             gain_loss_pct = ((sell_price - buy_price) / buy_price) * 100
 
+                    confidence = confidences[i]
+
                     row = {
                         "Date": convert_to_timezone_naive(date),
                         "Ticker Open Price": test_data_with_indicators.loc[date, "Open"],
@@ -189,6 +192,7 @@ async def export_backtest_results(request: BacktestRequest):
                         "Portfolio Value": portfolio_value,
                         "Daily Return Pct": daily_return * 100,
                         "Prediction": "UP" if prediction == 1 else "DOWN" if prediction == 0 else "N/A",
+                        "Confidence": confidence,
                         "Trade Action": trade_on_date["action"] if trade_on_date else "HOLD",
                         "Trade Shares": trade_on_date["shares"] if trade_on_date else 0,
                         "Trade Value": trade_on_date["value"] if trade_on_date else 0,

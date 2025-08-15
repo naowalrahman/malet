@@ -71,9 +71,7 @@ class DataFetcher:
             data.index = pd.to_datetime(data.index)
             data['Symbol'] = symbol
 
-            print("DATA RANGE:")
-            print(data.first())
-            print(data.last())
+            print(f"DATA RANGE: {data.iloc[0].name} to {data.iloc[-1].name}")
             
             return data
             

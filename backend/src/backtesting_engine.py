@@ -87,8 +87,8 @@ class MLTradingStrategy(TradingStrategy):
             return self._empty_results()
         
         try:
-            # Get predictions from the model
-            predictions = self.model.predict(data)
+            # Get predictions and confidences from the model
+            predictions, confidences = self.model.predict(data)
             
             if len(predictions) == 0:
                 return self._empty_results()
@@ -200,7 +200,8 @@ class MLTradingStrategy(TradingStrategy):
                 'trades': trades,
                 'portfolio_values': portfolio_values,
                 'dates': original_dates,
-                'predictions': predictions.tolist() if hasattr(predictions, 'tolist') else list(predictions)
+                'predictions': predictions.tolist() if hasattr(predictions, 'tolist') else list(predictions),
+                'confidences': confidences.tolist() if hasattr(confidences, 'tolist') else list(confidences)
             }
             
         except Exception as e:
@@ -569,33 +570,53 @@ class BacktestEngine:
         Create trade analysis plot for a specific model
         """
         try:
-            trades = self.results['ml_strategies'][model_id]['trades']
+            strategy = self.results['ml_strategies'][model_id]
+            trades = strategy['trades']
             model_name = self.models[model_id]['model_name']
             
             if not trades:
                 return None
             
+            # Build confidence lookup by date
+            def normalize(d):
+                try:
+                    ts = pd.to_datetime(d)
+                    if hasattr(ts, 'tz') and ts.tz is not None:
+                        return ts.tz_localize(None)
+                    return ts
+                except Exception:
+                    return d
+            dates = [normalize(d) for d in strategy.get('dates', [])]
+            confidences = strategy.get('confidences', [])
+            confidence_map = {dates[i]: confidences[i] for i in range(min(len(dates), len(confidences)))}
+
             buy_trades = [t for t in trades if t['action'] == 'BUY']
             sell_trades = [t for t in trades if t['action'] == 'SELL']
             
             fig = go.Figure()
             
             if buy_trades:
+                buy_conf = [confidence_map.get(normalize(t['date']), None) for t in buy_trades]
                 fig.add_trace(go.Scatter(
                     x=[t['date'] for t in buy_trades],
                     y=[t['price'] for t in buy_trades],
                     mode='markers',
                     name='Buy Signals',
-                    marker=dict(color='green', size=10, symbol='triangle-up')
+                    marker=dict(color='green', size=10, symbol='triangle-up'),
+                    customdata=buy_conf,
+                    hovertemplate='Date: %{x}<br>Price: %{y:.2f}<br>Confidence: %{customdata:.2f}<extra></extra>'
                 ))
             
             if sell_trades:
+                sell_conf = [confidence_map.get(normalize(t['date']), None) for t in sell_trades]
                 fig.add_trace(go.Scatter(
                     x=[t['date'] for t in sell_trades],
                     y=[t['price'] for t in sell_trades],
                     mode='markers',
                     name='Sell Signals',
-                    marker=dict(color='red', size=10, symbol='triangle-down')
+                    marker=dict(color='red', size=10, symbol='triangle-down'),
+                    customdata=sell_conf,
+                    hovertemplate='Date: %{x}<br>Price: %{y:.2f}<br>Confidence: %{customdata:.2f}<extra></extra>'
                 ))
             
             fig.update_layout(
