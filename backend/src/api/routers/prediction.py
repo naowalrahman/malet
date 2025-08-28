@@ -19,9 +19,25 @@ async def make_prediction(request: PredictionRequest):
         model_info = models[request.model_id]
         trainer = model_info["trainer"]
 
+        prediction_date = datetime.strptime(request.date, "%Y-%m-%d")
+        fetch_start_date = prediction_date - timedelta(weeks=52)
+
+        # Use custom indicator start date if provided
+        if request.indicator_start_date:
+            custom_start_date = datetime.strptime(request.indicator_start_date, "%Y-%m-%d")
+
+            # Validate that indicator start date is at least 1 year before prediction date
+            if custom_start_date >= prediction_date - timedelta(days=365):
+                raise HTTPException(
+                    status_code=400,
+                    detail="Indicator start date must be at least 1 year before the prediction date"
+                )
+
+            fetch_start_date = custom_start_date
+
         data = data_fetcher.fetch_historical_data(
             request.symbol,
-            (datetime.strptime(request.date, "%Y-%m-%d") - timedelta(weeks=52)).strftime("%Y-%m-%d"),
+            fetch_start_date.strftime("%Y-%m-%d"),
             request.date,
         )
 

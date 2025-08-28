@@ -24,6 +24,20 @@ async def get_backtest_data(request: BacktestRequest):
 
         test_start_date = datetime.strptime(request.start_date, "%Y-%m-%d")
         fetch_start_date = test_start_date - timedelta(weeks=52)
+
+        # Use custom indicator start date if provided
+        if request.indicator_start_date:
+            custom_start_date = datetime.strptime(request.indicator_start_date, "%Y-%m-%d")
+
+            # Validate that indicator start date is at least 1 year before test start date
+            if custom_start_date >= test_start_date - timedelta(days=365):
+                raise HTTPException(
+                    status_code=400,
+                    detail="Indicator start date must be at least 1 year before the backtest start date"
+                )
+
+            fetch_start_date = custom_start_date
+
         padding_data = data_fetcher.fetch_historical_data(
             request.symbol, fetch_start_date.strftime("%Y-%m-%d"), request.start_date
         )

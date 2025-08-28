@@ -38,6 +38,7 @@ import { PlayArrow, Info, Download } from "@mui/icons-material";
 import { apiService } from "../services/api";
 import ModernPlot from "../components/ModernPlot";
 import ModelDetailsDialog from "../components/ModelDetailsDialog";
+import CustomIndicatorDatePicker from "../components/CustomIndicatorDatePicker";
 import type { TrainedModelDetails, BacktestRequest, BacktestResults } from "../services/api";
 
 function getModelLabel(model: TrainedModelDetails): string {
@@ -86,6 +87,8 @@ function Backtesting() {
   const [initialCapital, setInitialCapital] = useState(10000);
   const [startDate, setStartDate] = useState<Dayjs>(dayjs("2020-01-01"));
   const [endDate, setEndDate] = useState<Dayjs>(dayjs("2025-01-01"));
+  const [useCustomIndicatorStart, setUseCustomIndicatorStart] = useState(false);
+  const [indicatorStartDate, setIndicatorStartDate] = useState<Dayjs>(dayjs("2019-01-01"));
   const [isRunning, setIsRunning] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [results, setResults] = useState<BacktestResults | null>(null);
@@ -124,6 +127,7 @@ function Backtesting() {
         initial_capital: initialCapital,
         start_date: startDate.format("YYYY-MM-DD"),
         end_date: endDate.format("YYYY-MM-DD"),
+        indicator_start_date: useCustomIndicatorStart ? indicatorStartDate.format("YYYY-MM-DD") : undefined,
       };
 
       setResults(await apiService.runBacktest(request));
@@ -150,6 +154,7 @@ function Backtesting() {
         initial_capital: initialCapital,
         start_date: startDate.format("YYYY-MM-DD"),
         end_date: endDate.format("YYYY-MM-DD"),
+        indicator_start_date: useCustomIndicatorStart ? indicatorStartDate.format("YYYY-MM-DD") : undefined,
       };
 
       const blob = await apiService.exportBacktestResults(request);
@@ -462,6 +467,16 @@ function Backtesting() {
                 }}
               />
             </Grid>
+
+            {/* Custom Indicator Start Date */}
+            <CustomIndicatorDatePicker
+              checked={useCustomIndicatorStart}
+              onCheckedChange={setUseCustomIndicatorStart}
+              value={indicatorStartDate}
+              onChange={(date) => date && setIndicatorStartDate(date)}
+              mainDate={startDate}
+              mainDateLabel="backtest start date"
+            />
           </Grid>
 
           <Box sx={{ mt: 3 }}>

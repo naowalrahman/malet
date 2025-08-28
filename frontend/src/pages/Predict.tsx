@@ -29,11 +29,14 @@ dayjs.extend(timezone);
 dayjs.extend(utc);
 
 import { apiService, type TrainedModelDetails, type Prediction } from "../services/api";
+import CustomIndicatorDatePicker from "../components/CustomIndicatorDatePicker";
 
 interface PredictFormData {
   symbol: string;
   modelId: string;
   date: Dayjs | null;
+  useCustomIndicatorStart: boolean;
+  indicatorStartDate: Dayjs | null;
 }
 
 function Predict() {
@@ -41,6 +44,8 @@ function Predict() {
     symbol: "",
     modelId: "",
     date: dayjs(), // default to today
+    useCustomIndicatorStart: false,
+    indicatorStartDate: dayjs().subtract(1, 'year'), // default to 1 year ago
   });
   const [models, setModels] = useState<TrainedModelDetails[]>([]);
   const [prediction, setPrediction] = useState<Prediction | null>(null);
@@ -112,7 +117,8 @@ function Predict() {
       const result = await apiService.makePrediction(
         formData.symbol.toUpperCase(),
         formData.modelId,
-        formData.date.format("YYYY-MM-DD")
+        formData.date.format("YYYY-MM-DD"),
+        formData.useCustomIndicatorStart ? formData.indicatorStartDate?.format("YYYY-MM-DD") : undefined
       );
       setPrediction(result);
     } catch (err: any) {
@@ -252,6 +258,16 @@ function Predict() {
                   }}
                 />
               </Grid>
+
+              {/* Custom Indicator Start Date */}
+              <CustomIndicatorDatePicker
+                checked={formData.useCustomIndicatorStart}
+                onCheckedChange={(checked) => handleInputChange("useCustomIndicatorStart", checked)}
+                value={formData.indicatorStartDate}
+                onChange={(date) => handleInputChange("indicatorStartDate", date)}
+                mainDate={formData.date}
+                mainDateLabel="prediction date"
+              />
 
               <Grid size={{ xs: 12 }}>
                 <FormControl fullWidth>

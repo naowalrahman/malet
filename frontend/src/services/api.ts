@@ -109,6 +109,7 @@ export interface BacktestRequest {
   initial_capital: number;
   start_date: string;
   end_date: string;
+  indicator_start_date?: string;
 }
 
 export interface BacktestResults {
@@ -224,11 +225,12 @@ class ApiService {
   }
 
   // Prediction endpoints
-  async makePrediction(symbol: string, modelId: string, date: string): Promise<Prediction> {
+  async makePrediction(symbol: string, modelId: string, date: string, indicatorStartDate?: string): Promise<Prediction> {
     const response = await axios.post(`${this.baseURL}/predict`, {
       symbol,
       model_id: modelId,
       date,
+      indicator_start_date: indicatorStartDate,
     });
     return response.data;
   }

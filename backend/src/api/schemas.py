@@ -32,11 +32,13 @@ class BacktestRequest(BaseModel):
     initial_capital: float = 10000
     start_date: str
     end_date: str
+    indicator_start_date: str = None
 
 
 class PredictionRequest(BaseModel):
     symbol: str
     model_id: str
     date: str
+    indicator_start_date: str = None
 
 
