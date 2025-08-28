@@ -26,10 +26,10 @@ This workflow runs your trading script (`trade.sh`) at 3:55 PM New York time eve
 
 ### Workflow Details
 
-- **Schedule**: Runs at 3:55 PM Eastern Time (ET) every weekday (Monday-Friday)
+- **Schedule**: Scheduled to run around 3:55 PM Eastern Time (ET) every weekday (Monday-Friday), with validation for the entire 3 PM hour
 - **Execution**: Runs the trading script directly with proper path handling
 - **Notification**: Sends email with trade results only when execution actually occurs
-- **Timezone Handling**: Uses precise America/New_York timezone checking to run exactly at 3:55 PM ET, automatically handling DST transitions
+- **Timezone Handling**: Uses precise America/New_York timezone checking to validate we're within the 3 PM ET hour, automatically handling DST transitions
 
 ### Manual Execution
 

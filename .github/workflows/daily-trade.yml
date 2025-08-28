@@ -23,21 +23,22 @@ jobs:
     - name: Install dependencies
       run: |
         cd backend
-        pip install -r requirements.txt
+        pip install -r requirements_no_nvidia.txt
 
-    - name: Check if it's 3:55 PM Eastern Time
+    - name: Check if it's during the 3 PM Eastern Time hour
       run: |
         # Get current time in America/New_York timezone
-        current_ny_time=$(TZ="America/New_York" date +"%H%M")
+        current_ny_hour=$(TZ="America/New_York" date +"%H")
+        current_ny_minute=$(TZ="America/New_York" date +"%M")
 
-        echo "Current time in New York: $current_ny_time"
-        echo "Target time: 1555 (3:55 PM)"
+        echo "Current time in New York: ${current_ny_hour}:${current_ny_minute}"
+        echo "Checking if we're in the 3 PM hour (15:00-15:59 ET)"
 
-        if [ "$current_ny_time" = "1555" ]; then
-          echo "Correct time detected (3:55 PM ET). Proceeding with trade execution."
+        if [ "$current_ny_hour" = "15" ]; then
+          echo "Within 3 PM ET hour. Proceeding with trade execution."
           echo "SKIP_TRADE=false" >> $GITHUB_ENV
         else
-          echo "Not 3:55 PM ET (current: $current_ny_time). Skipping execution."
+          echo "Not within 3 PM ET hour (current hour: $current_ny_hour). Skipping execution."
           echo "SKIP_TRADE=true" >> $GITHUB_ENV
         fi
 
@@ -78,7 +79,7 @@ jobs:
         username: ${{ secrets.EMAIL_USERNAME }}
         password: ${{ secrets.EMAIL_PASSWORD }}
         subject: |
-          Daily Trade Execution Results - ${{ env.SKIP_TRADE == 'true' && 'SKIPPED' || (env.TRADE_EXIT_CODE == '0' && 'SUCCESS' || 'FAILED') }} - $(date +'%Y-%m-%d')
+          Daily Trade Execution Results - ${{ env.SKIP_TRADE == 'true' && 'SKIPPED' || (env.TRADE_EXIT_CODE == '0' && 'SUCCESS' || 'FAILED') }} - $(date +'%Y-%m-%d %H:%M ET')
         body: |
           Daily Trade Execution Report
           =============================
