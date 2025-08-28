@@ -2,9 +2,9 @@ name: Daily Trade Execution
 
 on:
   schedule:
-    # Run at 8:55 PM UTC (3:55 PM ET during standard time) OR
-    # Run at 7:55 PM UTC (3:55 PM ET during daylight saving time)
-    - cron: '55 19,20 * * 1-5'
+    # Run at 8:30 PM UTC (3:30 PM ET during standard time) OR
+    # Run at 7:30 PM UTC (3:30 PM ET during daylight saving time)
+    - cron: '30 19,20 * * 1-5'
   workflow_dispatch: # Allow manual triggering
 
 jobs:
