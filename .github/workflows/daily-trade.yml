@@ -1,0 +1,98 @@
+name: Daily Trade Execution
+
+on:
+  schedule:
+    # Run at 8:55 PM UTC (3:55 PM ET during standard time) OR
+    # Run at 7:55 PM UTC (3:55 PM ET during daylight saving time)
+    - cron: '55 19,20 * * 1-5'
+  workflow_dispatch: # Allow manual triggering
+
+jobs:
+  run-trade:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.13'
+
+    - name: Install dependencies
+      run: |
+        cd backend
+        pip install -r requirements.txt
+
+    - name: Check if it's 3:55 PM Eastern Time
+      run: |
+        # Get current time in America/New_York timezone
+        current_ny_time=$(TZ="America/New_York" date +"%H%M")
+
+        echo "Current time in New York: $current_ny_time"
+        echo "Target time: 1555 (3:55 PM)"
+
+        if [ "$current_ny_time" = "1555" ]; then
+          echo "Correct time detected (3:55 PM ET). Proceeding with trade execution."
+          echo "SKIP_TRADE=false" >> $GITHUB_ENV
+        else
+          echo "Not 3:55 PM ET (current: $current_ny_time). Skipping execution."
+          echo "SKIP_TRADE=true" >> $GITHUB_ENV
+        fi
+
+    - name: Execute trade script
+      if: env.SKIP_TRADE != 'true'
+      id: trade
+      run: |
+        echo "Starting trade execution at $(date)"
+        # Change to backend/src directory and run the trading script
+        cd backend/src
+
+        # Capture both stdout and stderr
+        output=$(python -m alpaca-trader.trader --symbol SPUS --model ../saved_models/0bb6a8ce-d506-4faf-bd3c-9384e7544dc4.pkl --paper 2>&1)
+        exit_code=$?
+
+        # Store the output for later use
+        echo "TRADE_OUTPUT<<EOF" >> $GITHUB_ENV
+        echo "$output" >> $GITHUB_ENV
+        echo "EOF" >> $GITHUB_ENV
+
+        echo "TRADE_EXIT_CODE=$exit_code" >> $GITHUB_ENV
+
+        # Print output for debugging
+        echo "$output"
+
+        if [ $exit_code -eq 0 ]; then
+          echo "Trade execution completed successfully"
+        else
+          echo "Trade execution failed with exit code $exit_code"
+        fi
+
+    - name: Send email notification
+      if: env.SKIP_TRADE != 'true' && always() # Only send if trade was supposed to run
+      uses: dawidd6/action-send-mail@v3
+      with:
+        server_address: smtp.gmail.com
+        server_port: 465
+        username: ${{ secrets.EMAIL_USERNAME }}
+        password: ${{ secrets.EMAIL_PASSWORD }}
+        subject: |
+          Daily Trade Execution Results - ${{ env.SKIP_TRADE == 'true' && 'SKIPPED' || (env.TRADE_EXIT_CODE == '0' && 'SUCCESS' || 'FAILED') }} - $(date +'%Y-%m-%d')
+        body: |
+          Daily Trade Execution Report
+          =============================
+
+          Execution Time: $(date)
+          Status: ${{ env.SKIP_TRADE == 'true' && 'SKIPPED - Wrong timezone execution' || (env.TRADE_EXIT_CODE == '0' && 'SUCCESS' || 'FAILED') }}
+          ${{ env.SKIP_TRADE == 'true' && 'Exit Code: N/A' || format('Exit Code: {0}', env.TRADE_EXIT_CODE) }}
+
+          Trade Output:
+          -------------
+          ${{ env.TRADE_OUTPUT }}
+
+          ---
+          This is an automated message from your trading workflow.
+        to: ${{ secrets.NOTIFICATION_EMAIL }}
+        from: Trading Bot <${{ secrets.EMAIL_USERNAME }}>
+        content_type: text/plain

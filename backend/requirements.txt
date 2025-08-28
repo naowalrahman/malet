@@ -1,7 +1,9 @@
 aiofiles
+alpaca-py
 annotated-types
 anyio
 beautifulsoup4
+build
 cachetools
 certifi
 cffi
@@ -29,6 +31,7 @@ kiwisolver
 MarkupSafe
 matplotlib
 mpmath
+msgpack
 multitasking
 narwhals
 networkx
@@ -61,6 +64,7 @@ pycparser
 pydantic
 pydantic_core
 pyparsing
+pyproject_hooks
 python-dateutil
 python-dotenv
 python-multipart
@@ -74,9 +78,11 @@ setuptools
 six
 sniffio
 soupsieve
+sseclient-py
 starlette
 sympy
 ta
+TA-Lib
 tenacity
 threadpoolctl
 torch
@@ -89,4 +95,3 @@ urllib3
 uvicorn
 websockets
 yfinance
-alpaca-py
