@@ -58,8 +58,12 @@ class TechnicalIndicators:
             df[f'SMA_{period}'] = df['Close'].rolling(window=period).mean()
             df[f'EMA_{period}'] = df['Close'].ewm(span=period).mean()
         
-        # VWAP (Volume Weighted Average Price)
-        df['VWAP'] = (df['Close'] * df['Volume']).cumsum() / df['Volume'].cumsum()
+        # VWAP (Volume Weighted Average Price) - using rolling 20-day window to avoid look-ahead bias
+        window = 20
+        df['VWAP'] = (
+            (df['Close'] * df['Volume']).rolling(window).sum() / 
+            df['Volume'].rolling(window).sum()
+        )
         
         # Hull Moving Average
         df['HMA_20'] = TechnicalIndicators.hull_moving_average(df['Close'], 20)
@@ -193,9 +197,9 @@ class TechnicalIndicators:
         df['R2'] = df['Pivot'] + (df['High'] - df['Low'])
         df['S2'] = df['Pivot'] - (df['High'] - df['Low'])
         
-        # Local highs and lows
-        df['Local_High'] = df['High'].rolling(window=window, center=True).max()
-        df['Local_Low'] = df['Low'].rolling(window=window, center=True).min()
+        # Local highs and lows (using backward-looking window to avoid look-ahead bias)
+        df['Local_High'] = df['High'].rolling(window=window).max()
+        df['Local_Low'] = df['Low'].rolling(window=window).min()
         
         # Distance from support/resistance
         df['Dist_From_High'] = (df['Local_High'] - df['Close']) / df['Close']
