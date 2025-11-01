@@ -28,7 +28,7 @@ MALET (**MA**chine **LE**arning **T**rader) is a platform to fetch financial dat
 - [ ] Add ideal buy and sell signals to the backtesting results
 - [ ] Add option to specify separate tickers for buy and sell
 
-## ✨ Key Features
+## Key Features
 
 * **Interactive Dashboard:** Get a high-level overview of market conditions, model performance, and quick actions. Utilizes Gemini API to create a comprehensive AI-powered analysis of market data for SPY, QQQ, and DJIA.
 * **Dynamic Data Fetching:** Pulls historical stock data from yfinance for any given ticker and date range.
@@ -44,7 +44,7 @@ MALET (**MA**chine **LE**arning **T**rader) is a platform to fetch financial dat
     * Visualize results with interactive Plotly charts for portfolio growth, return distribution, and drawdown analysis.
 * **RESTful API:** A robust FastAPI backend serves all data and machine learning functionalities.
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 This project is a monorepo composed of the frontend application and a backend service.
 
@@ -75,7 +75,7 @@ MALET utilizes deep learning for time-series forecasting. The goal is to predict
 3.  **Transformer (`Transformer.py`):** An attention-based model, inspired by its success in natural language processing, adapted here to identify complex patterns and relationships in financial time-series data.
 4.  **GRU (`GRU.py`):** A variant of the LSTM model that uses a Gated Recurrent Unit architecture, which is generally more efficient, performant, and better at dealing with vanishing gradients.
 
-## 🚀 Getting Started
+## Getting Started
 
 To get the application running locally, follow these steps.
 
@@ -133,7 +133,7 @@ The frontend application will now be running on `http://localhost:5173` (or anot
 * **/data (Future)**: A planned section for in-depth data exploration and visualization.
 * **/live (Future)**: A planned section for simulated or real live trading.
 
-## 🔗 API Endpoints
+## API Endpoints
 
 The FastAPI backend provides several endpoints to support the application. Here are some of the key ones:
 
