@@ -18,7 +18,7 @@ $$/      $$/ $$/   $$/ $$$$$$$$/ $$$$$$$$/    $$/
 > [!NOTE]
 > I'm current working on blog post explaining the project in detail, as well is an analysis of the models and their performance. Check it out on my [blog](https://naowalrahman.rocks/#/blog), where I'll be posting it soon.
 
-MALET (**MA**chine **LE**arning **T**rader) is a platform to fetch financial data, train various deep learning models for trading, and backtest performance against historical market data. It performs very well when trained over 5+ years of daily close data for diverse ETFs like SPY and QQQ, beating buy and hold strategies by a wide margin.
+MALET (**MA**chine **LE**arning **T**rader) is a platform to fetch financial data, train various deep learning models for trading, and backtest performance against historical market data. It performs well when trained over 5+ years of daily close data for diverse ETFs like SPY and QQQ.
 
 ![MALET dashboard](img/dashboard.svg)
 
