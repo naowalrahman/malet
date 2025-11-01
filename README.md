@@ -66,7 +66,7 @@ This project is a monorepo composed of the frontend application and a backend se
 * **Technical Analysis:** ta
 * **API Server:** Uvicorn
 
-## 🧠 Machine Learning Models
+## Machine Learning Models
 
 MALET utilizes deep learning for time-series forecasting. The goal is to predict whether the price of a stock will move up or down over a defined future period based on a set of technical indicators and previous close prices spanning a defined time period (sequence length). As such, all the models involve some sort of deep learning architecture followed by a classification layer to predict the binary outcome.
 
@@ -125,7 +125,7 @@ npm run dev
 
 The frontend application will now be running on `http://localhost:5173` (or another port if 5173 is in use).
 
-## 🗺️ Application Pages
+## Application Pages
 
 * **/dashboard**: The main landing page showing a summary of market data/analysis, trained models, and quick navigation links.
 * **/training**: Configure, train, and manage your machine learning models. Set hyperparameters and monitor training progress.
